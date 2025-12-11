@@ -21,6 +21,92 @@ const stage2 = {
 }
 
 ## 技术规范
+
+### 游戏开发 - 使用 Phaser 3 框架
+**重要：所有游戏类型的应用必须使用 Phaser 3 框架开发！**
+
+Phaser 3 已在页面中引入（CDN），可直接使用全局变量 \`Phaser\`。
+
+#### Phaser 3 基础结构
+\`\`\`javascript
+const config = {
+    type: Phaser.AUTO,
+    width: window.innerWidth,
+    height: window.innerHeight,
+    parent: 'game-container', // HTML中需要有这个容器
+    physics: {
+        default: 'arcade',
+        arcade: {
+            gravity: { y: 300 },
+            debug: false
+        }
+    },
+    scene: {
+        preload: preload,
+        create: create,
+        update: update
+    },
+    scale: {
+        mode: Phaser.Scale.FIT,
+        autoCenter: Phaser.Scale.CENTER_BOTH
+    }
+};
+
+let game;
+
+function preload() {
+    // 加载资源（图片、音频等）
+}
+
+function create() {
+    // 创建游戏对象
+}
+
+function update() {
+    // 游戏循环逻辑
+}
+
+// 在开始按钮点击时初始化游戏
+document.getElementById('start-btn').addEventListener('click', () => {
+    document.getElementById('start-screen').classList.add('hidden');
+    game = new Phaser.Game(config);
+});
+\`\`\`
+
+#### Phaser 3 核心功能
+1. **精灵和图形**：
+   - \`this.add.rectangle(x, y, width, height, color)\` - 创建矩形
+   - \`this.add.circle(x, y, radius, color)\` - 创建圆形
+   - \`this.add.text(x, y, '文本', {style})\` - 创建文本
+   - \`this.add.sprite(x, y, 'key')\` - 创建精灵
+
+2. **物理系统**：
+   - \`this.physics.add.sprite(x, y, 'key')\` - 创建物理精灵
+   - \`sprite.setVelocity(x, y)\` - 设置速度
+   - \`sprite.setCollideWorldBounds(true)\` - 边界碰撞
+   - \`this.physics.add.collider(obj1, obj2, callback)\` - 碰撞检测
+
+3. **输入处理**：
+   - \`this.input.on('pointerdown', callback)\` - 点击事件
+   - \`this.input.keyboard.createCursorKeys()\` - 键盘控制
+   - \`this.input.activePointer\` - 获取指针位置
+
+4. **分数和UI**：
+   - 使用 \`this.add.text()\` 创建分数显示
+   - 使用 \`setText()\` 更新文本内容
+
+5. **游戏结束**：
+   - \`this.scene.pause()\` - 暂停场景
+   - 显示游戏结束界面，销毁游戏实例
+
+#### 注意事项
+- 确保 HTML 中有 \`<div id="game-container"></div>\` 容器
+- 使用简单的几何图形（rectangle, circle）而非外部图片资源
+- 合理使用物理引擎处理碰撞和移动
+- 分数等UI元素用 Phaser 的 text 对象管理
+- 游戏结束时记得暂停场景并显示结束界面
+
+### 非游戏应用 - 原生 JavaScript
 - 语义化 HTML 标签
 - CSS 变量管理主题色
 - Flexbox/Grid 布局
@@ -31,10 +117,11 @@ const stage2 = {
 - 适当的错误处理
 
 ## 重要提醒
-1. 专注于功能实现，不要过度设计样式
-2. 确保核心功能100%可用
-3. 代码要能直接运行，不依赖外部库
-4. 样式保持简洁，后续Designer会优化`,
+1. 游戏必须使用 Phaser 3 框架，不要用原生 Canvas
+2. 专注于功能实现，不要过度设计样式
+3. 确保核心功能100%可用
+4. 代码要能直接运行
+5. 样式保持简洁，后续Designer会优化`,
 
     user: (enrichedData, prompt) => {
         const appName = enrichedData?.appName || '应用';
@@ -60,15 +147,16 @@ const stage2 = {
 图片设计师已生成封面图，文件路径：${coverImagePath}
 
 你必须创建一个**开始界面**：
-- HTML：创建一个 id="start-screen" 的全屏遮罩层
+- HTML：创建一个 id="start-screen" 的全屏遮罩层${isGame ? '和 id="game-container" 的游戏容器' : ''}
 - CSS：直接使用图片URL设置背景：\`background-image: url('${coverImagePath}');\`
-- JS：点击"开始${isGame ? '游戏' : ''}"按钮后隐藏开始界面
+- JS：点击"开始${isGame ? '游戏' : ''}"按钮后隐藏开始界面${isGame ? '并初始化 Phaser 游戏' : ''}
 
 示例代码：
 \`\`\`html
 <div id="start-screen">
   <button id="start-btn">开始${isGame ? '游戏' : ''}</button>
 </div>
+${isGame ? '<div id="game-container"></div>' : ''}
 \`\`\`
 
 \`\`\`css
@@ -203,12 +291,96 @@ ${userFlow || '根据需求设计'}
 ### 技术建议
 ${technicalNotes || '无特殊要求'}
 ${imageInstructions}
+${isGame ? `
+## 🎮 游戏开发特别说明
+**必须使用 Phaser 3 框架开发游戏！**
+
+Phaser 3 已在页面中全局引入，请按照以下结构开发：
+
+### HTML 结构
+\`\`\`html
+<div id="start-screen">...</div>
+<div id="game-container"></div>
+<div id="gameover-screen">...</div>
+\`\`\`
+
+### JavaScript 结构
+\`\`\`javascript
+const config = {
+    type: Phaser.AUTO,
+    width: window.innerWidth,
+    height: window.innerHeight,
+    parent: 'game-container',
+    physics: {
+        default: 'arcade',
+        arcade: { gravity: { y: 300 }, debug: false }
+    },
+    scene: { preload, create, update },
+    scale: {
+        mode: Phaser.Scale.FIT,
+        autoCenter: Phaser.Scale.CENTER_BOTH
+    }
+};
+
+let game;
+let score = 0;
+let scoreText;
+
+function preload() {
+    // 预加载资源（如果需要）
+}
+
+function create() {
+    // 创建游戏元素
+    // 使用 this.add.rectangle, this.add.circle, this.add.text 等
+    // 使用 this.physics.add.sprite 创建物理对象
+    scoreText = this.add.text(16, 16, 'Score: 0', { fontSize: '32px', fill: '#fff' });
+}
+
+function update() {
+    // 游戏主循环
+}
+
+// 游戏结束函数
+function gameOver() {
+    if (game && game.scene.scenes[0]) {
+        game.scene.scenes[0].scene.pause();
+    }
+    document.getElementById('final-score').textContent = '得分: ' + score;
+    document.getElementById('gameover-screen').classList.add('show');
+}
+
+// 开始游戏
+document.getElementById('start-btn').addEventListener('click', () => {
+    document.getElementById('start-screen').classList.add('hidden');
+    game = new Phaser.Game(config);
+});
+
+// 重新开始
+document.getElementById('retry-btn').addEventListener('click', () => {
+    document.getElementById('gameover-screen').classList.remove('show');
+    if (game) {
+        game.destroy(true);
+    }
+    score = 0;
+    document.getElementById('start-screen').classList.remove('hidden');
+});
+\`\`\`
+
+### 游戏开发要点
+1. 使用简单几何图形：this.add.rectangle(), this.add.circle()
+2. 物理碰撞：this.physics.add.collider(obj1, obj2, callback)
+3. 输入处理：this.input.on('pointerdown', callback) 或 this.input.keyboard
+4. 分数管理：用全局变量 score 和 Phaser text 对象
+5. 游戏结束：调用 gameOver() 函数暂停场景并显示结束界面
+` : ''}
+
 ## 你的任务
 作为开发工程师，请：
 1. ${coverImagePath ? '创建开始界面（使用提供的封面图路径）' : ''}
-2. 实现所有核心功能
+2. ${isGame ? '使用 Phaser 3 框架实现游戏核心功能' : '实现所有核心功能'}
 3. ${(isGame && gameOverImagePath) ? '创建游戏结束界面（使用提供的失败图路径 + 吐槽语 + "不服再来"按钮）' : ''}
-4. 确保代码可以直接运行
+4. ${isGame ? '确保游戏有完整的开始-游戏-结束循环' : '确保代码可以直接运行'}
 5. 处理基本的边界情况
 6. 添加必要的注释
 
