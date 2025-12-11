@@ -86,7 +86,7 @@
     }
   },
   "api": {
-    "path": "/v1/chat/completions",
+    "path": "/chat/completions",
     "timeout": 120000,
     "retries": 2
   },
