@@ -1,0 +1,97 @@
+{
+  "models": {
+    "qwen3instruct": {
+      "name": "qwen3instruct",
+      "displayName": "资深PM",
+      "endpoint": "",
+      "apiKey": "",
+      "model": "ms-fp2qdl97",
+      "max_tokens": 8192,
+      "temperature": 0.7
+    },
+    "qwencoder480B": {
+      "name": "qwencoder480B",
+      "displayName": "资深程序员",
+      "endpoint": "",
+      "apiKey": "",
+      "model": "ms-w6nrzb9r",
+      "max_tokens": 32000,
+      "temperature": 0.7,
+      "top_p": 0.8,
+      "top_k": 20,
+      "repetition_penalty": 1.05
+    },
+    "qwencoder30b": {
+      "name": "qwencoder30b",
+      "displayName": "敏捷程序员",
+      "endpoint": "",
+      "apiKey": "",
+      "model": "ms-2jw224px",
+      "max_tokens": 32000,
+      "temperature": 0.7,
+      "top_p": 0.8,
+      "top_k": 20,
+      "repetition_penalty": 1.05
+    },
+    "text2image": {
+      "name": "text2image",
+      "displayName": "图片生成",
+      "type": "image",
+      "endpoint": "",
+      "fullUrl": true,
+      "model": "SyndicationAPI-TextToImage-ModelF",
+      "size": "512x512",
+      "true_cfg_scale": 1.0,
+      "num_inference_steps": 8,
+      "seed": 42
+    }
+  },
+  "stages": {
+    "stage1": {
+      "name": "需求分析",
+      "modelKey": "qwen3instruct",
+      "availableModels": ["qwen3instruct"],
+      "defaultModel": "qwen3instruct"
+    },
+    "stage1_5": {
+      "name": "图片生成",
+      "modelKey": "qwen3instruct",
+      "imageModel": "text2image",
+      "availableModels": ["qwen3instruct"],
+      "defaultModel": "qwen3instruct"
+    },
+    "stage2": {
+      "name": "代码生成",
+      "modelKey": "qwencoder480B",
+      "availableModels": ["qwencoder480B", "qwencoder30b"],
+      "defaultModel": "qwencoder480B"
+    },
+    "stage3": {
+      "name": "交互增强",
+      "modelKey": "qwencoder480B",
+      "availableModels": ["qwencoder480B", "qwencoder30b"],
+      "defaultModel": "qwencoder480B"
+    },
+    "stage4": {
+      "name": "优化完善",
+      "modelKey": "qwencoder480B",
+      "availableModels": ["qwencoder480B", "qwencoder30b"],
+      "defaultModel": "qwencoder480B"
+    },
+    "stage5": {
+      "name": "对话优化",
+      "modelKey": "qwencoder480B",
+      "availableModels": ["qwencoder480B", "qwencoder30b"],
+      "defaultModel": "qwencoder480B"
+    }
+  },
+  "api": {
+    "path": "/v1/chat/completions",
+    "timeout": 120000,
+    "retries": 2
+  },
+  "generation": {
+    "stream": true,
+    "skipStage2ForSimpleApps": true
+  }
+}

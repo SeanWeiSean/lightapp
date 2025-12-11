@@ -1,0 +1,23 @@
+{
+  "cosmos": {
+    "endpoint": "https://lightapp.documents.azure.cn:443/",
+    "key": "your-cosmos-db-key-here"
+  },
+  "models": {
+    "qwen3instruct": {
+      "endpoint": "https://your-model-endpoint-here",
+      "apiKey": "your-api-key-here"
+    },
+    "qwencoder480B": {
+      "endpoint": "https://your-model-endpoint-here",
+      "apiKey": "your-api-key-here"
+    },
+    "qwencoder30b": {
+      "endpoint": "https://your-model-endpoint-here",
+      "apiKey": "your-api-key-here"
+    },
+    "text2image": {
+      "endpoint": "https://your-image-endpoint-here"
+    }
+  }
+}

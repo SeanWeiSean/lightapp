@@ -1,0 +1,32 @@
+{
+  "featured": [
+    {
+      "id": "38717a6d",
+      "category": "games",
+      "tags": ["游戏", "休闲", "吃豆人"],
+      "featured": true,
+      "order": 1
+    },
+    {
+      "id": "1ce16f2d",
+      "category": "lifestyle",
+      "tags": ["名言", "励志", "正能量"],
+      "featured": true,
+      "order": 2
+    },
+    {
+      "id": "425f85b6",
+      "category": "education",
+      "tags": ["数学", "儿童", "练习"],
+      "featured": true,
+      "order": 3
+    }
+  ],
+  "categories": [
+    { "id": "education", "name": "教育学习", "icon": "📚" },
+    { "id": "tools", "name": "实用工具", "icon": "🔧" },
+    { "id": "games", "name": "休闲游戏", "icon": "🎮" },
+    { "id": "lifestyle", "name": "生活助手", "icon": "🏠" },
+    { "id": "creative", "name": "创意设计", "icon": "🎨" }
+  ]
+}

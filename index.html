@@ -1,0 +1,3088 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LightApp - AI 应用生成器</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-primary: #0f0f17;
+            --bg-secondary: #16161f;
+            --bg-tertiary: #1e1e2a;
+            --border-color: rgba(255,255,255,0.08);
+            --text-primary: #ffffff;
+            --text-secondary: #8b8b9e;
+            --accent: #6366f1;
+            --accent-hover: #818cf8;
+            --success: #10b981;
+            --error: #ef4444;
+            --warning: #f59e0b;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            background: var(--bg-primary); 
+            color: var(--text-primary); 
+            min-height: 100vh;
+            overflow: hidden;
+        }
+        .container { display: flex; flex-direction: column; height: 100vh; }
+        
+        /* Header */
+        .header { 
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between;
+            padding: 12px 24px; 
+            background: var(--bg-secondary); 
+            border-bottom: 1px solid var(--border-color);
+            z-index: 100;
+        }
+        .logo { display: flex; align-items: center; gap: 10px; font-size: 20px; font-weight: 700; }
+        .logo i { color: var(--accent); }
+        .logo-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-left: 12px;
+            padding: 4px 10px;
+            background: linear-gradient(135deg, rgba(99,102,241,0.2), rgba(139,92,246,0.2));
+            border: 1px solid rgba(99,102,241,0.3);
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--accent-hover);
+        }
+        .logo-badge i { font-size: 10px; color: var(--accent); }
+        .logo-badge .pipeline-dots {
+            display: flex;
+            gap: 3px;
+        }
+        .logo-badge .pipeline-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--accent);
+            opacity: 0.4;
+        }
+        .logo-badge .pipeline-dot:nth-child(1) { opacity: 1; }
+        .logo-badge .pipeline-dot:nth-child(2) { opacity: 0.8; }
+        .logo-badge .pipeline-dot:nth-child(3) { opacity: 0.6; }
+        .logo-badge .pipeline-dot:nth-child(4) { opacity: 0.4; }
+        .header-actions { display: flex; gap: 12px; }
+        .header-btn {
+            padding: 8px 16px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-secondary);
+            font-size: 13px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+        .header-btn:hover { background: var(--accent); color: white; border-color: var(--accent); }
+        .header-btn.store-btn {
+            background: linear-gradient(135deg, #f5a623 0%, #f7931e 100%);
+            border-color: #f5a623;
+            color: white;
+            font-weight: 600;
+        }
+        .header-btn.store-btn:hover {
+            background: linear-gradient(135deg, #ffb840 0%, #ffa726 100%);
+            border-color: #ffb840;
+            box-shadow: 0 2px 8px rgba(245, 166, 35, 0.4);
+        }
+        
+        /* Main Layout */
+        .main { display: flex; flex: 1; overflow: hidden; }
+        
+        /* Left Panel */
+        .left { 
+            width: 360px; 
+            min-width: 320px;
+            background: var(--bg-secondary); 
+            border-right: 1px solid var(--border-color); 
+            display: flex;
+            flex-direction: column;
+        }
+        .left-content { padding: 20px; flex: 1; overflow-y: auto; }
+        .section-title { font-size: 12px; color: var(--text-secondary); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+        
+        #prompt { 
+            width: 100%; 
+            height: 100px; 
+            padding: 14px; 
+            background: var(--bg-primary); 
+            border: 1px solid var(--border-color); 
+            border-radius: 10px; 
+            color: var(--text-primary); 
+            font-size: 14px; 
+            resize: none; 
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        #prompt:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(99,102,241,0.15); }
+        #prompt::placeholder { color: var(--text-secondary); }
+        
+        .tags { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0; }
+        .tag { 
+            padding: 8px 14px; 
+            background: var(--bg-tertiary); 
+            border: 1px solid var(--border-color); 
+            border-radius: 20px; 
+            font-size: 13px; 
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .tag:hover { background: var(--accent); border-color: var(--accent); transform: translateY(-1px); }
+        
+        #genBtn { 
+            width: 100%; 
+            padding: 14px; 
+            margin-top: 12px; 
+            background: linear-gradient(135deg, #6366f1, #8b5cf6); 
+            border: none; 
+            border-radius: 10px; 
+            color: white; 
+            font-size: 15px; 
+            font-weight: 600; 
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        #genBtn:hover { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(99,102,241,0.4); }
+        #genBtn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; box-shadow: none; }
+        
+        /* 生成状态提示 */
+        .gen-status {
+            margin-top: 12px;
+            padding: 10px 14px;
+            background: linear-gradient(135deg, rgba(99,102,241,0.1), rgba(139,92,246,0.1));
+            border: 1px solid rgba(99,102,241,0.2);
+            border-radius: 8px;
+            font-size: 13px;
+            color: var(--accent-hover);
+            display: none;
+            align-items: center;
+            gap: 10px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        .gen-status.show { display: flex; }
+        .gen-status i { font-size: 14px; }
+        .gen-status .status-stage {
+            font-weight: 600;
+            color: var(--accent);
+        }
+        .gen-status .status-desc {
+            color: var(--text-secondary);
+            font-size: 12px;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        /* Stages */
+        .stages { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border-color); }
+        .stage { 
+            display: flex; 
+            align-items: center; 
+            gap: 12px; 
+            padding: 12px; 
+            margin-bottom: 8px; 
+            background: var(--bg-tertiary); 
+            border-radius: 10px; 
+            opacity: 0.4;
+            transition: all 0.3s;
+        }
+        .stage.active { opacity: 1; background: rgba(99,102,241,0.15); border: 1px solid var(--accent); }
+        .stage.done { opacity: 1; }
+        .stage.skipped { opacity: 0.6; }
+        .stage.skipped .stage-icon { background: var(--warning); color: white; }
+        .stage.skipped .stage-summary { background: rgba(245,158,11,0.1); }
+        .stage.skipped .stage-summary i { color: var(--warning); }
+        .stage.error { opacity: 1; background: rgba(239,68,68,0.15); border: 1px solid var(--error); }
+        .stage-icon { 
+            width: 32px; 
+            height: 32px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            border-radius: 8px; 
+            background: var(--bg-primary); 
+            font-size: 14px;
+        }
+        .stage.active .stage-icon { background: var(--accent); color: white; }
+        .stage.done .stage-icon { background: var(--success); color: white; }
+        .stage-summary {
+            font-size: 10px;
+            color: var(--text-secondary);
+            margin-top: 3px;
+            padding: 3px 6px;
+            background: rgba(16,185,129,0.1);
+            border-radius: 4px;
+            display: none;
+            max-width: 180px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .stage.done .stage-summary, .stage.skipped .stage-summary { display: block; }
+        .stage.done .stage-summary i { margin-right: 4px; color: var(--success); font-size: 9px; }
+        .stage.skipped .stage-summary i { margin-right: 4px; color: var(--warning); font-size: 9px; }
+        
+        /* 流水线配置面板 */
+        .pipeline-config-panel {
+            display: none;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+            animation: slideDown 0.2s ease;
+        }
+        .pipeline-config-panel.show { display: block; }
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .pipeline-config-panel .panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .pipeline-config-panel .panel-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .pipeline-config-panel .panel-title i { color: var(--accent); }
+        .config-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+        }
+        .config-row:last-child { border-bottom: none; }
+        .config-row .config-label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+        .config-row .config-label .stage-num {
+            width: 22px;
+            height: 22px;
+            background: var(--bg-tertiary);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--accent);
+        }
+        .config-row .config-label .stage-name { color: var(--text-primary); font-weight: 500; }
+        .config-select {
+            padding: 6px 10px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 12px;
+            cursor: pointer;
+            outline: none;
+            min-width: 140px;
+            transition: all 0.2s;
+        }
+        .config-select:hover { border-color: var(--accent); }
+        .config-select:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(99,102,241,0.2); }
+        .config-select option { background: var(--bg-secondary); color: var(--text-primary); padding: 8px; }
+        .config-select.skipped { border-color: var(--warning); color: var(--warning); }
+        .stages-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        .stages-header .section-title { margin-bottom: 0; }
+        .pipeline-config-btn {
+            padding: 8px 14px;
+            background: linear-gradient(135deg, #f59e0b, #f97316);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+            box-shadow: 0 2px 8px rgba(245,158,11,0.3);
+        }
+        .pipeline-config-btn:hover { 
+            background: linear-gradient(135deg, #fbbf24, #fb923c);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(245,158,11,0.4);
+        }
+        .pipeline-config-btn.active {
+            background: linear-gradient(135deg, var(--accent), #8b5cf6);
+            box-shadow: 0 2px 8px rgba(99,102,241,0.3);
+        }
+        .pipeline-config-btn i { font-size: 11px; }
+        .stage.error .stage-icon { background: var(--error); color: white; }
+        .stage-info { flex: 1; }
+        .stage-name { font-size: 13px; font-weight: 500; }
+        .stage-desc { font-size: 11px; color: var(--text-secondary); margin-top: 2px; }
+        .stage-time { font-size: 12px; color: var(--text-secondary); font-weight: 500; }
+        
+        /* Right Panel */
+        .right { flex: 1; display: flex; flex-direction: column; background: var(--bg-primary); }
+        
+        /* Toolbar */
+        .toolbar { 
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between; 
+            padding: 8px 16px; 
+            background: var(--bg-secondary); 
+            border-bottom: 1px solid var(--border-color);
+        }
+        .tabs { display: flex; gap: 4px; }
+        .tab { 
+            padding: 8px 16px; 
+            border: none; 
+            background: transparent; 
+            color: var(--text-secondary); 
+            font-size: 13px; 
+            cursor: pointer; 
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+        .tab:hover { background: var(--bg-tertiary); color: var(--text-primary); }
+        .tab.on { background: var(--accent); color: white; }
+        
+        .toolbar-actions { display: flex; align-items: center; gap: 8px; }
+        .device-btns { display: flex; gap: 4px; margin-right: 12px; }
+        .device-btn {
+            width: 32px;
+            height: 32px;
+            border: none;
+            border-radius: 6px;
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .device-btn:hover, .device-btn.active { background: var(--accent); color: white; }
+        
+        .icon-btn { 
+            width: 32px; 
+            height: 32px; 
+            border: none; 
+            border-radius: 6px; 
+            background: var(--bg-tertiary); 
+            color: var(--text-secondary); 
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .icon-btn:hover { background: var(--accent); color: white; }
+        
+        .zoom-control {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            background: var(--bg-tertiary);
+            border-radius: 6px;
+            padding: 2px;
+            margin-right: 8px;
+        }
+        .zoom-btn {
+            width: 28px;
+            height: 28px;
+            border: none;
+            border-radius: 4px;
+            background: transparent;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .zoom-btn:hover { background: var(--accent); color: white; }
+        .zoom-value {
+            font-size: 12px;
+            color: var(--text-secondary);
+            min-width: 40px;
+            text-align: center;
+        }
+        
+        /* Content Area */
+        .content { flex: 1; position: relative; overflow: hidden; display: flex; flex-direction: column; }
+        
+        #empty { 
+            position: absolute; 
+            inset: 0; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            color: var(--text-secondary);
+        }
+        #empty i { font-size: 64px; margin-bottom: 20px; opacity: 0.2; }
+        #empty h3 { margin-bottom: 8px; color: var(--text-primary); font-size: 18px; }
+        #empty p { font-size: 14px; }
+        
+        .panel { display: none; width: 100%; flex: 1; min-height: 0; }
+        .panel.show { display: flex; }
+        
+        /* Preview Panel - Enhanced Sandbox */
+        .preview-container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #1a1a24;
+            background-image: 
+                radial-gradient(circle at 1px 1px, rgba(255,255,255,0.05) 1px, transparent 0);
+            background-size: 20px 20px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .preview-wrapper {
+            position: relative;
+            transition: all 0.3s ease;
+            box-shadow: 0 25px 80px rgba(0,0,0,0.5);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        
+        .preview-wrapper.device-mobile {
+            width: 375px;
+            height: 667px;
+            border-radius: 40px;
+            border: 12px solid #2a2a35;
+        }
+        .preview-wrapper.device-mobile::before {
+            content: '';
+            position: absolute;
+            top: 6px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 6px;
+            background: #1a1a24;
+            border-radius: 3px;
+            z-index: 10;
+        }
+        
+        .preview-wrapper.device-tablet {
+            width: 768px;
+            height: 1024px;
+            max-height: 90%;
+            border-radius: 20px;
+            border: 16px solid #2a2a35;
+        }
+        
+        .preview-wrapper.device-desktop {
+            width: 100%;
+            height: 100%;
+            border-radius: 0;
+            border: none;
+            box-shadow: none;
+        }
+        
+        #preview { 
+            width: 100%; 
+            height: 100%; 
+            border: none; 
+            background: #fff;
+            transform-origin: top left;
+        }
+        
+        /* Code Panel */
+        .code-panel {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        .code-fallback {
+            width: 100%;
+            height: 100%;
+            padding: 16px;
+            background: #1e1e2a;
+            color: #e0e0e0;
+            font-family: 'Fira Code', 'Monaco', 'Consolas', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            overflow: auto;
+            border: none;
+            outline: none;
+            resize: none;
+        }
+        
+        /* Featured Apps */
+        .featured-section {
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        /* Console Log */
+        #log { 
+            flex-shrink: 0;
+            height: 0;
+            background: rgba(15,15,23,0.98); 
+            backdrop-filter: blur(10px);
+            padding: 0; 
+            font-family: 'Fira Code', monospace; 
+            font-size: 12px; 
+            color: var(--success); 
+            overflow-y: auto; 
+            border-top: 1px solid var(--border-color);
+            transition: height 0.2s ease, padding 0.2s ease;
+        }
+        #log.show { height: 150px; padding: 12px 16px; }
+        #log .log-line { margin-bottom: 4px; display: flex; gap: 8px; }
+        #log .log-time { color: var(--text-secondary); }
+        #log .log-msg { color: var(--success); }
+        #log .log-msg.error { color: var(--error); }
+        #log .log-msg.warn { color: var(--warning); }
+        
+        /* Animations */
+        .spin { animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        .fade-in { animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        
+        /* Fullscreen */
+        .fullscreen .left,
+        .fullscreen .header { display: none; }
+        .fullscreen .right { width: 100%; }
+        
+        /* 全屏退出按钮 */
+        .fullscreen-exit-btn {
+            display: none;
+            position: fixed;
+            top: 60px;
+            left: 16px;
+            padding: 8px 14px;
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 6px;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 12px;
+            cursor: pointer;
+            z-index: 9999;
+            backdrop-filter: blur(10px);
+            transition: all 0.2s;
+            opacity: 0.5;
+        }
+        .fullscreen-exit-btn:hover {
+            background: rgba(99, 102, 241, 0.8);
+            border-color: var(--accent);
+            color: white;
+            opacity: 1;
+        }
+        .fullscreen .fullscreen-exit-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        /* Refine Section - 融入左侧边栏 */
+        .refine-section {
+            margin-top: 20px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border-color);
+        }
+        .refine-section .section-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .refine-section .section-title i { color: var(--accent); font-size: 11px; }
+        .refine-input-wrapper {
+            display: flex;
+            gap: 8px;
+            align-items: flex-end;
+        }
+        #refineInput {
+            flex: 1;
+            min-height: 38px;
+            max-height: 100px;
+            padding: 10px 12px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-size: 13px;
+            resize: none;
+            outline: none;
+            transition: all 0.2s;
+            line-height: 1.4;
+        }
+        #refineInput:focus { 
+            border-color: var(--accent); 
+            background: var(--bg-primary);
+            box-shadow: 0 0 0 2px rgba(99,102,241,0.1);
+        }
+        #refineInput::placeholder { color: var(--text-secondary); font-size: 12px; }
+        #refineBtn {
+            width: 38px;
+            height: 38px;
+            padding: 0;
+            background: var(--accent);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+        #refineBtn:hover { 
+            background: var(--accent-hover); 
+            transform: scale(1.05); 
+        }
+        #refineBtn:disabled { 
+            opacity: 0.5; 
+            cursor: not-allowed; 
+            transform: none; 
+        }
+        .refine-status {
+            margin-top: 8px;
+            font-size: 11px;
+            color: var(--text-secondary);
+            min-height: 16px;
+        }
+        .refine-status:empty { display: none; }
+        .refine-status.success { color: var(--success); }
+        .refine-status.error { color: var(--error); }
+        .refine-model-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        .refine-model-row label {
+            font-size: 11px;
+            color: var(--text-secondary);
+            white-space: nowrap;
+        }
+        #refineModel {
+            flex: 1;
+            padding: 5px 8px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-size: 11px;
+            cursor: pointer;
+            outline: none;
+            transition: all 0.2s;
+        }
+        #refineModel:hover { border-color: var(--accent); }
+        #refineModel:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(99,102,241,0.15); }
+        #refineModel:disabled { opacity: 0.5; cursor: not-allowed; }
+        
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.7);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+        .modal-overlay.show { display: flex; }
+        .modal {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            width: 480px;
+            max-width: 90vw;
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+        }
+        .modal-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .modal-header h3 { font-size: 16px; display: flex; align-items: center; gap: 10px; }
+        .modal-header h3 i { color: var(--accent); }
+        .modal-close {
+            width: 32px; height: 32px;
+            border: none; border-radius: 8px;
+            background: transparent;
+            color: var(--text-secondary);
+            cursor: pointer; font-size: 16px;
+        }
+        .modal-close:hover { background: var(--error); color: white; }
+        .modal-body { flex: 1; overflow-y: auto; padding: 20px; }
+        
+        /* 应用商店样式 */
+        .store-modal { max-width: 700px; width: 90%; max-height: 80vh; }
+        .store-categories {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .store-category {
+            padding: 8px 16px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            color: var(--text-secondary);
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .store-category:hover { border-color: var(--accent); color: var(--text-primary); }
+        .store-category.active { background: var(--accent); border-color: var(--accent); color: white; }
+        .store-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 16px;
+        }
+        .store-app {
+            padding: 16px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .store-app:hover {
+            border-color: var(--accent);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 24px rgba(99,102,241,0.2);
+        }
+        .store-app-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--accent), #8b5cf6);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            margin-bottom: 12px;
+        }
+        .store-app-name {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 6px;
+        }
+        .store-app-desc {
+            font-size: 12px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            margin-bottom: 12px;
+        }
+        .store-app-tags {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        .store-app-tag {
+            padding: 3px 8px;
+            background: rgba(99,102,241,0.15);
+            border-radius: 6px;
+            font-size: 11px;
+            color: var(--accent-hover);
+        }
+        .store-app-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: auto;
+            padding-top: 10px;
+        }
+        .store-action-btn {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .store-action-btn:hover {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: white;
+        }
+        .store-action-btn.save-btn:hover {
+            background: #ef4444;
+            border-color: #ef4444;
+        }
+        .store-loading, .store-empty {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 40px;
+            color: var(--text-secondary);
+        }
+        .store-loading i { margin-right: 8px; }
+        
+        .app-list { display: flex; flex-direction: column; gap: 10px; }
+        .app-item {
+            padding: 14px 16px;
+            background: var(--bg-tertiary);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+        }
+        .app-item:hover { border-color: var(--accent); }
+        .app-icon {
+            width: 40px; height: 40px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-size: 16px;
+        }
+        .app-info { flex: 1; min-width: 0; }
+        .app-name { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .app-date { font-size: 11px; color: var(--text-secondary); }
+        .app-actions { display: flex; gap: 6px; }
+        .app-action-btn {
+            width: 30px; height: 30px;
+            border: none; border-radius: 6px;
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+            cursor: pointer; font-size: 12px;
+        }
+        .app-action-btn:hover { color: var(--accent); }
+        .app-action-btn.delete:hover { color: var(--error); }
+        .empty-apps { text-align: center; padding: 40px; color: var(--text-secondary); }
+        .empty-apps i { font-size: 40px; margin-bottom: 12px; opacity: 0.5; }
+        .share-result {
+            background: var(--bg-tertiary);
+            border-radius: 10px;
+            padding: 16px;
+            margin-top: 12px;
+            display: none;
+        }
+        .share-result.show { display: block; }
+        .share-url { display: flex; gap: 8px; margin-top: 10px; }
+        .share-url input {
+            flex: 1;
+            padding: 10px 12px;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 13px;
+        }
+        .share-url button {
+            padding: 10px 14px;
+            background: var(--accent);
+            border: none; border-radius: 8px;
+            color: white; cursor: pointer;
+        }
+        .share-url button:hover { background: var(--accent-hover); }
+        
+        /* 移动端预览按钮 - 默认隐藏，通过JS控制显示 */
+        .mobile-preview-btn, .mobile-back-btn {
+            display: none;
+            width: 100%;
+            padding: 14px;
+            margin-top: 16px;
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            text-align: center;
+        }
+        .mobile-preview-btn {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+        .mobile-back-btn {
+            background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+            margin-bottom: 16px;
+        }
+        .mobile-preview-btn i, .mobile-back-btn i {
+            margin-right: 8px;
+        }
+        .mobile-preview-btn:active, .mobile-back-btn:active {
+            transform: scale(0.98);
+        }
+        
+        /* Responsive - Mobile */
+        @media (max-width: 900px) {
+            .header {
+                padding: 12px 16px;
+                flex-wrap: wrap;
+                gap: 12px;
+            }
+            .logo {
+                font-size: 18px;
+            }
+            .logo-badge {
+                display: none;
+            }
+            .header-actions {
+                width: 100%;
+                justify-content: space-between;
+                gap: 8px;
+            }
+            .header-btn {
+                padding: 8px 10px;
+                font-size: 12px;
+                flex: 1;
+                justify-content: center;
+            }
+            .header-btn span, .header-btn i + span {
+                display: none;
+            }
+            /* 只显示图标 */
+            .header-btn i {
+                margin: 0;
+            }
+            #fullscreenBtn {
+                display: none;
+            }
+            
+            .main { 
+                flex-direction: column; 
+            }
+            .left { 
+                width: 100%; 
+                height: auto; 
+                max-height: none;
+                border-right: none; 
+                border-bottom: 1px solid var(--border-color); 
+                overflow: visible;
+            }
+            .left-content {
+                padding: 16px;
+            }
+            #prompt {
+                min-height: 80px;
+                font-size: 14px;
+            }
+            .tags {
+                gap: 8px;
+            }
+            .tag {
+                padding: 8px 12px;
+                font-size: 13px;
+            }
+            #genBtn {
+                padding: 14px;
+                font-size: 15px;
+            }
+            .stages {
+                margin-top: 16px;
+            }
+            .stages-header {
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+            .pipeline-config-btn {
+                font-size: 12px;
+                padding: 6px 10px;
+            }
+            .pipeline-config-panel {
+                padding: 12px;
+            }
+            .config-row {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 6px;
+            }
+            .config-label {
+                font-size: 12px;
+            }
+            .config-select {
+                font-size: 12px;
+            }
+            .stage {
+                padding: 10px 12px;
+            }
+            .stage-icon {
+                width: 32px;
+                height: 32px;
+                font-size: 14px;
+            }
+            .stage-name {
+                font-size: 13px;
+            }
+            .stage-desc {
+                font-size: 11px;
+            }
+            
+            /* 继续优化区域 */
+            .refine-section {
+                margin-top: 16px;
+            }
+            .refine-input-row {
+                flex-direction: column;
+                gap: 8px;
+            }
+            #refineInput {
+                font-size: 14px;
+            }
+            #refineModel {
+                width: 100%;
+            }
+            #refineBtn {
+                width: 100%;
+                padding: 12px;
+            }
+            
+            /* 右侧预览区 */
+            .right {
+                height: 50vh;
+                min-height: 300px;
+            }
+            .toolbar {
+                padding: 8px 12px;
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+            .tabs {
+                order: 2;
+                width: 100%;
+                justify-content: center;
+            }
+            .tab {
+                padding: 6px 12px;
+                font-size: 12px;
+            }
+            .actions {
+                order: 1;
+                width: 100%;
+                justify-content: space-between;
+            }
+            .actions button {
+                padding: 6px 10px;
+                font-size: 11px;
+            }
+            .device-btns { 
+                display: none; 
+            }
+            .zoom-control {
+                display: none;
+            }
+            .preview-wrapper {
+                padding: 8px;
+            }
+            
+            /* Modal 优化 */
+            .modal {
+                width: 95%;
+                max-width: none;
+                margin: 16px;
+                max-height: 85vh;
+            }
+            .store-modal {
+                width: 95%;
+            }
+            .store-grid {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+            .store-app {
+                padding: 16px;
+            }
+            .store-categories {
+                flex-wrap: nowrap;
+                overflow-x: auto;
+                padding-bottom: 8px;
+                gap: 8px;
+            }
+            .store-category {
+                flex-shrink: 0;
+                padding: 8px 12px;
+                font-size: 12px;
+            }
+        }
+        
+        /* 超小屏幕 */
+        @media (max-width: 480px) {
+            .header-actions {
+                gap: 4px;
+            }
+            .header-btn {
+                padding: 8px;
+            }
+            .header-btn.store-btn {
+                flex: none;
+                padding: 8px 12px;
+            }
+            /* 商店按钮显示文字 */
+            .header-btn.store-btn::after {
+                content: ' 商店';
+            }
+            .left-content {
+                padding: 12px;
+            }
+            .tag {
+                padding: 6px 10px;
+                font-size: 12px;
+            }
+            .modal-header h3 {
+                font-size: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container" id="app">
+        <!-- 全屏退出按钮 -->
+        <button class="fullscreen-exit-btn" id="fullscreenExitBtn"><i class="fas fa-compress"></i> 退出全屏</button>
+        
+        <header class="header">
+            <div class="logo">
+                <i class="fas fa-bolt"></i> LightApp
+                <div class="logo-badge">
+                    <div class="pipeline-dots">
+                        <span class="pipeline-dot"></span>
+                        <span class="pipeline-dot"></span>
+                        <span class="pipeline-dot"></span>
+                        <span class="pipeline-dot"></span>
+                    </div>
+                    多阶段 AI 流水线
+                </div>
+            </div>
+            <div class="header-actions">
+                <button class="header-btn" id="langBtn" title="切换语言"><i class="fas fa-globe"></i><span> 中文</span></button>
+                <button class="header-btn store-btn" id="storeBtn"><i class="fas fa-store"></i><span data-i18n="store"> 应用商店</span></button>
+                <button class="header-btn" id="myAppsBtn"><i class="fas fa-folder"></i><span data-i18n="myApps"> 我的应用</span></button>
+                <button class="header-btn" id="shareBtn"><i class="fas fa-share-alt"></i><span data-i18n="share"> 分享</span></button>
+                <button class="header-btn" id="fullscreenBtn"><i class="fas fa-expand"></i><span data-i18n="fullscreen"> 全屏</span></button>
+            </div>
+        </header>
+        <main class="main">
+            <section class="left">
+                <div class="left-content">
+                    <div class="section-title">描述你的应用</div>
+                    <textarea id="prompt" placeholder="用自然语言描述你想要的应用，比如：&#10;• 一个可以记录心情的日记本&#10;• 带动画效果的倒计时器&#10;• 一个简洁的习惯打卡应用"></textarea>
+                    
+                    <div class="section-title" style="margin-top: 16px;">快速开始</div>
+                    <div class="tags">
+                        <span class="tag" data-p="做一个待办事项应用，支持在行内添加、完成、删除任务，有流畅的动画效果">📝 待办清单</span>
+                        <span class="tag" data-p="做一个精美的计算器，支持四则运算">🧮 计算器</span>
+                        <span class="tag" data-p="做一个口算题app，一百以内">🔢 口算题</span>
+                        <span class="tag" data-p="做一个吃豆人风格的休闲游戏，吃豆得分">🎮 吃豆人</span>
+                        <span class="tag" data-p="做一个互动小应用，主题是加油小便签，通过简洁的界面和丰富的互动体验，将名人名言融入设计理念，提升文化内涵，为用户提供日常的积极语句能量支持">💪 加油便签</span>
+                        <span class="tag" data-p="做一个敲板砖游戏，用挡板弹球击碎上方的砖块，支持鼠标拖动">🧱 敲板砖</span>
+                    </div>
+                    <button id="genBtn"><i class="fas fa-bolt"></i> 闪电生成</button>
+                    <div class="gen-status" id="genStatus"></div>
+                    <div class="stages">
+                        <div class="stages-header">
+                            <div class="section-title">生成进度</div>
+                            <button class="pipeline-config-btn" id="toggleModelSelect" title="配置每个阶段使用的AI模型">
+                                <i class="fas fa-sliders-h"></i> 配置模型
+                            </button>
+                        </div>
+                        <!-- 统一的配置面板 -->
+                        <div class="pipeline-config-panel" id="configPanel">
+                            <div class="panel-header">
+                                <div class="panel-title"><i class="fas fa-cog"></i> 流水线配置</div>
+                            </div>
+                            <div class="config-row">
+                                <div class="config-label">
+                                    <span class="stage-num">1</span>
+                                    <span class="stage-name">PM · 需求分析</span>
+                                </div>
+                                <select class="config-select" id="model1"></select>
+                            </div>
+                            <div class="config-row">
+                                <div class="config-label">
+                                    <span class="stage-num">2</span>
+                                    <span class="stage-name">Dev · 逻辑实现</span>
+                                </div>
+                                <select class="config-select" id="model2"></select>
+                            </div>
+                            <div class="config-row">
+                                <div class="config-label">
+                                    <span class="stage-num">3</span>
+                                    <span class="stage-name">Tester · 漏洞查找</span>
+                                </div>
+                                <select class="config-select" id="model3"></select>
+                            </div>
+                            <div class="config-row">
+                                <div class="config-label">
+                                    <span class="stage-num">4</span>
+                                    <span class="stage-name">Designer · 画面优化</span>
+                                </div>
+                                <select class="config-select" id="model4"></select>
+                            </div>
+                        </div>
+                        <div class="stage" id="s1">
+                            <div class="stage-icon"><i class="fas fa-user-tie"></i></div>
+                            <div class="stage-info">
+                                <div class="stage-name">PM · 需求分析</div>
+                                <div class="stage-desc">理解需求，规划功能和交互</div>
+                                <div class="stage-summary" id="sum1"></div>
+                            </div>
+                            <div class="stage-time" id="t1"></div>
+                        </div>
+                        <div class="stage" id="s2">
+                            <div class="stage-icon"><i class="fas fa-paint-brush"></i></div>
+                            <div class="stage-info">
+                                <div class="stage-name">Artist · 图片生成</div>
+                                <div class="stage-desc">生成封面图和游戏图片</div>
+                                <div class="stage-summary" id="sum2"></div>
+                            </div>
+                            <div class="stage-time" id="t2"></div>
+                        </div>
+                        <div class="stage" id="s3">
+                            <div class="stage-icon"><i class="fas fa-laptop-code"></i></div>
+                            <div class="stage-info">
+                                <div class="stage-name">Dev · 逻辑实现</div>
+                                <div class="stage-desc">编写核心代码和业务逻辑</div>
+                                <div class="stage-summary" id="sum3"></div>
+                            </div>
+                            <div class="stage-time" id="t3"></div>
+                        </div>
+                        <div class="stage" id="s4">
+                            <div class="stage-icon"><i class="fas fa-bug"></i></div>
+                            <div class="stage-info">
+                                <div class="stage-name">Tester · 漏洞查找</div>
+                                <div class="stage-desc">测试边界情况，修复潜在问题</div>
+                                <div class="stage-summary" id="sum4"></div>
+                            </div>
+                            <div class="stage-time" id="t4"></div>
+                        </div>
+                        <div class="stage" id="s5">
+                            <div class="stage-icon"><i class="fas fa-palette"></i></div>
+                            <div class="stage-info">
+                                <div class="stage-name">Designer · 画面优化</div>
+                                <div class="stage-desc">优化视觉效果和用户体验</div>
+                                <div class="stage-summary" id="sum5"></div>
+                            </div>
+                            <div class="stage-time" id="t5"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- 继续优化 -->
+                    <div class="refine-section">
+                        <div class="section-title"><i class="fas fa-comment-dots"></i> 继续优化</div>
+                        <div class="refine-model-row">
+                            <label><i class="fas fa-robot"></i> 模型</label>
+                            <select id="refineModel" disabled></select>
+                        </div>
+                        <div class="refine-input-wrapper">
+                            <textarea id="refineInput" placeholder="描述你想要的修改..." rows="1"></textarea>
+                            <button id="refineBtn" title="发送"><i class="fas fa-paper-plane"></i></button>
+                        </div>
+                        <div class="refine-status" id="refineStatus"></div>
+                    </div>
+                    
+                    <!-- 移动端查看预览按钮 -->
+                    <button class="mobile-preview-btn" id="mobilePreviewBtn">
+                        <i class="fas fa-eye"></i> 向下滚动查看预览
+                    </button>
+                </div>
+            </section>
+            <section class="right">
+                <!-- 移动端返回顶部按钮 -->
+                <button class="mobile-back-btn" id="mobileBackBtn">
+                    <i class="fas fa-arrow-up"></i> 返回顶部编辑
+                </button>
+                <div class="toolbar">
+                    <div class="tabs">
+                        <button class="tab on" data-t="preview">预览</button>
+                        <button class="tab" data-t="html">HTML</button>
+                        <button class="tab" data-t="css">CSS</button>
+                        <button class="tab" data-t="js">JavaScript</button>
+                    </div>
+                    <div class="toolbar-actions">
+                        <div class="device-btns">
+                            <button class="device-btn" data-device="mobile" title="手机"><i class="fas fa-mobile-alt"></i></button>
+                            <button class="device-btn" data-device="tablet" title="平板"><i class="fas fa-tablet-alt"></i></button>
+                            <button class="device-btn active" data-device="desktop" title="桌面"><i class="fas fa-desktop"></i></button>
+                        </div>
+                        <div class="zoom-control">
+                            <button class="zoom-btn" id="zoomOut" title="缩小"><i class="fas fa-minus"></i></button>
+                            <span class="zoom-value" id="zoomValue">100%</span>
+                            <button class="zoom-btn" id="zoomIn" title="放大"><i class="fas fa-plus"></i></button>
+                        </div>
+                        <button class="icon-btn" id="refreshBtn" title="刷新预览"><i class="fas fa-sync-alt"></i></button>
+                        <button class="icon-btn" id="downloadBtn" title="下载代码"><i class="fas fa-download"></i></button>
+                        <button class="icon-btn" id="copyBtn" title="复制代码"><i class="fas fa-copy"></i></button>
+                    </div>
+                </div>
+                <div class="content">
+                    <div id="empty">
+                        <i class="fas fa-rocket"></i>
+                        <h3>开始创建你的应用</h3>
+                        <p>输入描述，点击"闪电生成"</p>
+                    </div>
+                    <div class="panel show" id="p-preview">
+                        <div class="preview-container">
+                            <div class="preview-wrapper device-desktop" id="previewWrapper">
+                                <iframe id="preview" sandbox="allow-scripts allow-forms allow-modals allow-popups allow-same-origin"></iframe>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="panel" id="p-html">
+                        <div class="code-panel"><textarea class="code-fallback" id="c-html" readonly></textarea></div>
+                    </div>
+                    <div class="panel" id="p-css">
+                        <div class="code-panel"><textarea class="code-fallback" id="c-css" readonly></textarea></div>
+                    </div>
+                    <div class="panel" id="p-js">
+                        <div class="code-panel"><textarea class="code-fallback" id="c-js" readonly></textarea></div>
+                    </div>
+                    <div id="log"></div>
+                </div>
+            </section>
+        </main>
+    </div>
+    
+    <!-- 我的应用弹窗 -->
+    <div class="modal-overlay" id="appsModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3><i class="fas fa-folder"></i> 我的应用</h3>
+                <button class="modal-close" id="appsModalClose"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="app-list" id="appList"></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 分享弹窗 -->
+    <div class="modal-overlay" id="shareModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3><i class="fas fa-share-alt"></i> 分享应用</h3>
+                <button class="modal-close" id="shareModalClose"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <p style="color: var(--text-secondary); margin-bottom: 16px;">保存应用到浏览器本地存储，随时可以加载</p>
+                <button id="saveAppBtn" style="width:100%; padding:12px; background:var(--accent); border:none; border-radius:8px; color:white; font-size:14px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
+                    <i class="fas fa-save"></i> 保存到本地
+                </button>
+                <div class="share-result" id="shareResult">
+                    <div style="color: var(--success); font-size:14px;"><i class="fas fa-check-circle"></i> 保存成功！分享链接：</div>
+                    <div class="share-url">
+                        <input type="text" id="shareUrl" readonly>
+                        <button id="copyShareUrl"><i class="fas fa-copy"></i></button>
+                    </div>
+                </div>
+                <!-- 隐藏的管理员按钮 - 点击分享链接输入框5次显示 -->
+                <div id="adminPanel" style="display:none; margin-top:16px; padding-top:16px; border-top:1px dashed var(--border-color);">
+                    <div style="color:var(--text-secondary); font-size:12px; margin-bottom:8px;">🔐 管理员操作</div>
+                    <div style="display:flex; gap:8px; margin-bottom:8px;">
+                        <select id="adminCategory" style="flex:1; padding:8px; background:var(--bg-tertiary); border:1px solid var(--border-color); border-radius:6px; color:var(--text-primary); font-size:12px;">
+                            <option value="tools">🔧 工具</option>
+                            <option value="games">🎮 游戏</option>
+                            <option value="education">📚 教育</option>
+                            <option value="lifestyle">🌟 生活</option>
+                            <option value="creative">🎨 创意</option>
+                        </select>
+                        <input id="adminOrder" type="number" value="10" min="1" max="999" style="width:60px; padding:8px; background:var(--bg-tertiary); border:1px solid var(--border-color); border-radius:6px; color:var(--text-primary); font-size:12px;" placeholder="排序">
+                    </div>
+                    <button id="addToStoreBtn" style="width:100%; padding:10px; background:linear-gradient(135deg,#f59e0b,#d97706); border:none; border-radius:6px; color:white; font-size:13px; cursor:pointer; margin-bottom:8px;">
+                        <i class="fas fa-plus-circle"></i> 添加到应用商店
+                    </button>
+                    <div style="display:flex; gap:8px;">
+                        <button id="removeFromStoreBtn" style="flex:1; padding:8px; background:var(--bg-tertiary); border:1px solid var(--border-color); border-radius:6px; color:var(--text-secondary); font-size:12px; cursor:pointer;">
+                            <i class="fas fa-store-slash"></i> 从商店下架
+                        </button>
+                        <button id="deleteAppBtn" style="flex:1; padding:8px; background:rgba(239,68,68,0.2); border:1px solid rgba(239,68,68,0.5); border-radius:6px; color:#ef4444; font-size:12px; cursor:pointer;">
+                            <i class="fas fa-trash"></i> 彻底删除
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 应用商店弹窗 -->
+    <div class="modal-overlay" id="storeModal">
+        <div class="modal store-modal">
+            <div class="modal-header">
+                <h3><i class="fas fa-store"></i> 应用商店</h3>
+                <button class="modal-close" id="storeModalClose"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="store-categories" id="storeCategories"></div>
+                <div class="store-grid" id="storeGrid">
+                    <div class="store-loading"><i class="fas fa-spinner spin"></i> 加载中...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+(function() {
+    'use strict';
+    
+    // 自动检测基础路径（支持 K8s ingress 路径前缀）
+    const BASE_PATH = (() => {
+        const path = window.location.pathname;
+        // 去掉 /index.html 和末尾斜杠
+        let cleanPath = path.replace(/\/index\.html$/, '').replace(/\/$/, '');
+        return cleanPath || '';
+    })();
+    
+    // 暴露到全局供模板使用
+    window.BASE_PATH = BASE_PATH;
+    
+    // API 请求辅助函数 - 使用完整路径确保正确
+    function api(endpoint) {
+        return BASE_PATH + endpoint;
+    }
+    
+    console.log('[LightApp] BASE_PATH:', BASE_PATH);
+    
+    // 国际化文本
+    const i18n = {
+        zh: {
+            store: ' 应用商店',
+            myApps: ' 我的应用', 
+            share: ' 分享',
+            fullscreen: ' 全屏',
+            exitFullscreen: ' 退出全屏',
+            langBtn: ' 中文',
+            subtitle: '多阶段 AI 流水线',
+            descTitle: '描述你的应用',
+            placeholder: '用自然语言描述你想要的应用，比如：\n• 一个可以记录心情的日记本\n• 带动画效果的倒计时器\n• 一个简洁的习惯打卡应用',
+            quickStart: '快速开始',
+            genBtn: ' 闪电生成',
+            generating: ' 生成中...',
+            pipelineConfig: ' 流水线配置',
+            preview: '预览',
+            code: '代码',
+            zoom: '缩放',
+            device: '设备',
+            desktop: '桌面',
+            mobile: '手机',
+            refineTitle: ' 继续优化',
+            refineModel: '模型',
+            refinePlaceholder: '描述你想要的修改...',
+            refineBtn: '优化',
+            storeTitle: ' 应用商店',
+            shareTitle: ' 分享应用',
+            saveToLocal: ' 保存到本地',
+            saveDesc: '保存应用到浏览器本地存储，随时可以加载',
+            myAppsTitle: ' 我的应用',
+            noApps: '还没有保存的应用',
+            systemReady: '系统就绪',
+            welcome: '欢迎体验 LightApp！当前展示: ',
+            // Stage names (for config panel)
+            configStage1: 'PM · 需求分析',
+            configStage2: 'Dev · 逻辑实现',
+            configStage3: 'Tester · 漏洞查找',
+            configStage4: 'Designer · 画面优化',
+            // Stage names (for stage cards)
+            stage1: 'PM · 需求分析',
+            stage2: 'Artist · 图片生成',
+            stage3: 'Dev · 逻辑实现',
+            stage4: 'Tester · 漏洞查找',
+            stage5: 'Designer · 画面优化',
+            // Stage descriptions
+            stageDesc1: '理解需求，规划功能和交互',
+            stageDesc2: '生成封面图和游戏图片',
+            stageDesc3: '编写核心代码和业务逻辑',
+            stageDesc4: '测试边界情况，修复潜在问题',
+            stageDesc5: '优化视觉效果和用户体验',
+            // Model descriptions
+            seniorPM: '资深PM',
+            seniorDev: '资深程序员',
+            agileDev: '敏捷程序员',
+            skip: '跳过此阶段'
+        },
+        en: {
+            store: ' Store',
+            myApps: ' My Apps',
+            share: ' Share', 
+            fullscreen: ' Fullscreen',
+            exitFullscreen: ' Exit Fullscreen',
+            langBtn: ' EN',
+            subtitle: 'Multi-Stage AI Pipeline',
+            descTitle: 'Describe Your App',
+            placeholder: 'Describe your app in natural language, e.g.:\n• A mood diary app\n• A countdown timer with animations\n• A simple habit tracker',
+            quickStart: 'Quick Start',
+            genBtn: ' Generate',
+            generating: ' Generating...',
+            pipelineConfig: ' Pipeline Config',
+            preview: 'Preview',
+            code: 'Code',
+            zoom: 'Zoom',
+            device: 'Device',
+            desktop: 'Desktop',
+            mobile: 'Mobile',
+            refineTitle: ' Refine',
+            refineModel: 'Model',
+            refinePlaceholder: 'Describe the changes you want...',
+            refineBtn: 'Refine',
+            storeTitle: ' App Store',
+            shareTitle: ' Share App',
+            saveToLocal: ' Save Locally',
+            saveDesc: 'Save the app to browser storage for later use',
+            myAppsTitle: ' My Apps',
+            noApps: 'No saved apps yet',
+            systemReady: 'System ready',
+            welcome: 'Welcome to LightApp! Showing: ',
+            // Stage names (for config panel)
+            configStage1: 'PM · Analysis',
+            configStage2: 'Dev · Coding',
+            configStage3: 'Tester · Testing',
+            configStage4: 'Designer · Polish',
+            // Stage names (for stage cards)
+            stage1: 'PM · Analysis',
+            stage2: 'Artist · Image Gen',
+            stage3: 'Dev · Coding',
+            stage4: 'Tester · Testing',
+            stage5: 'Designer · Polish',
+            // Stage descriptions
+            stageDesc1: 'Understand requirements, plan features',
+            stageDesc2: 'Generate cover and game images',
+            stageDesc3: 'Write core code and business logic',
+            stageDesc4: 'Test edge cases, fix potential issues',
+            stageDesc5: 'Optimize visuals and user experience',
+            // Model descriptions
+            seniorPM: 'Senior PM',
+            seniorDev: 'Senior Developer',
+            agileDev: 'Agile Developer',
+            skip: 'Skip this stage'
+        }
+    };
+    
+    let currentLang = localStorage.getItem('lightapp-lang') || 'zh';
+    
+    function t(key) {
+        return i18n[currentLang]?.[key] || i18n['zh'][key] || key;
+    }
+    
+    function switchLanguage() {
+        currentLang = currentLang === 'zh' ? 'en' : 'zh';
+        localStorage.setItem('lightapp-lang', currentLang);
+        applyLanguage();
+    }
+    
+    function applyLanguage() {
+        // 更新语言按钮
+        $('#langBtn span').textContent = currentLang === 'zh' ? ' 中文' : ' EN';
+        
+        // 更新 header 按钮
+        document.querySelectorAll('[data-i18n]').forEach(el => {
+            const key = el.dataset.i18n;
+            if (i18n[currentLang][key]) {
+                el.textContent = i18n[currentLang][key];
+            }
+        });
+        
+        // 更新副标题
+        const subtitle = document.querySelector('.header-title div:last-child');
+        if (subtitle && !subtitle.classList.contains('version-tag')) {
+            // 找到文本节点更新
+            const textNodes = [...subtitle.childNodes].filter(n => n.nodeType === 3);
+            if (textNodes.length > 0) {
+                textNodes[textNodes.length - 1].textContent = '\n                    ' + t('subtitle');
+            }
+        }
+        
+        // 更新描述区
+        const descTitle = document.querySelector('.left .section-title');
+        if (descTitle) descTitle.textContent = t('descTitle');
+        
+        const prompt = $('#prompt');
+        if (prompt) prompt.placeholder = t('placeholder');
+        
+        const quickStart = document.querySelectorAll('.left .section-title')[1];
+        if (quickStart) quickStart.textContent = t('quickStart');
+        
+        // 更新生成按钮
+        const genBtn = $('#genBtn');
+        if (genBtn && !state.busy) {
+            genBtn.innerHTML = '<i class="fas fa-bolt"></i>' + t('genBtn');
+        }
+        
+        // 更新 tabs
+        const previewTab = document.querySelector('.tab[data-t="preview"]');
+        const codeTab = document.querySelector('.tab[data-t="code"]');
+        if (previewTab) previewTab.innerHTML = '<i class="fas fa-eye"></i> ' + t('preview');
+        if (codeTab) codeTab.innerHTML = '<i class="fas fa-code"></i> ' + t('code');
+        
+        // 更新优化区
+        const refineTitle = document.querySelector('.refine-section .section-title');
+        if (refineTitle) refineTitle.innerHTML = '<i class="fas fa-comment-dots"></i>' + t('refineTitle');
+        
+        const refineInput = $('#refineInput');
+        if (refineInput) refineInput.placeholder = t('refinePlaceholder');
+        
+        const refineBtn = $('#refineBtn');
+        if (refineBtn && !refineBtn.disabled) {
+            refineBtn.innerHTML = '<i class="fas fa-magic"></i> ' + t('refineBtn');
+        }
+        
+        // 更新优化区模型标签
+        const refineModelLabel = document.querySelector('.refine-model-row label');
+        if (refineModelLabel) refineModelLabel.innerHTML = '<i class="fas fa-robot"></i> ' + t('refineModel');
+        
+        // 更新配置面板标题
+        const panelTitle = document.querySelector('.panel-title');
+        if (panelTitle) panelTitle.innerHTML = '<i class="fas fa-cog"></i> ' + t('pipelineConfig');
+        
+        // 更新配置面板里的阶段名称
+        const configStageNames = document.querySelectorAll('#configPanel .config-row .stage-name');
+        const configStageKeys = ['configStage1', 'configStage2', 'configStage3', 'configStage4'];
+        configStageNames.forEach((el, i) => {
+            if (configStageKeys[i]) el.textContent = t(configStageKeys[i]);
+        });
+        
+        // 更新阶段卡片名称
+        const stageNames = document.querySelectorAll('.stage .stage-name');
+        const stageKeys = ['stage1', 'stage2', 'stage3', 'stage4', 'stage5'];
+        stageNames.forEach((el, i) => {
+            if (stageKeys[i]) el.textContent = t(stageKeys[i]);
+        });
+        
+        // 更新阶段卡片描述
+        const stageDescs = document.querySelectorAll('.stage .stage-desc');
+        const stageDescKeys = ['stageDesc1', 'stageDesc2', 'stageDesc3', 'stageDesc4', 'stageDesc5'];
+        stageDescs.forEach((el, i) => {
+            if (stageDescKeys[i]) el.textContent = t(stageDescKeys[i]);
+        });
+        
+        // 更新模型选择器选项
+        updateModelSelectOptions();
+        
+        // 更新弹窗标题
+        const storeModalTitle = document.querySelector('#storeModal .modal-header h3');
+        if (storeModalTitle) storeModalTitle.innerHTML = '<i class="fas fa-store"></i>' + t('storeTitle');
+        
+        const shareModalTitle = document.querySelector('#shareModal .modal-header h3');
+        if (shareModalTitle) shareModalTitle.innerHTML = '<i class="fas fa-share-alt"></i>' + t('shareTitle');
+        
+        const appsModalTitle = document.querySelector('#appsModal .modal-header h3');
+        if (appsModalTitle) appsModalTitle.innerHTML = '<i class="fas fa-folder"></i>' + t('myAppsTitle');
+        
+        // 更新保存按钮
+        const saveBtn = $('#saveAppBtn');
+        if (saveBtn) saveBtn.innerHTML = '<i class="fas fa-save"></i>' + t('saveToLocal');
+        
+        const saveDesc = document.querySelector('#shareModal .modal-body > p');
+        if (saveDesc) saveDesc.textContent = t('saveDesc');
+    }
+    
+    // 更新模型选择器选项的翻译
+    function updateModelSelectOptions() {
+        const modelDisplayNames = {
+            'qwen3instruct': t('seniorPM'),
+            'gpt4o': t('seniorDev'),
+            'deepseekv3': t('agileDev'),
+            'skip': t('skip')
+        };
+        
+        // 更新配置面板的模型选择器
+        ['model1', 'model2', 'model3', 'model4'].forEach(id => {
+            const select = document.getElementById(id);
+            if (select) {
+                Array.from(select.options).forEach(option => {
+                    const modelKey = option.value;
+                    if (modelDisplayNames[modelKey]) {
+                        option.textContent = modelDisplayNames[modelKey];
+                    }
+                });
+            }
+        });
+        
+        // 更新优化区模型选择器
+        const refineSelect = document.getElementById('refineModel');
+        if (refineSelect) {
+            Array.from(refineSelect.options).forEach(option => {
+                const modelKey = option.value;
+                if (modelDisplayNames[modelKey]) {
+                    option.textContent = modelDisplayNames[modelKey];
+                }
+            });
+        }
+    }
+    
+    // State
+    const state = {
+        busy: false,
+        generated: false,  // 是否已完成过生成
+        code: { html: '', css: '', js: '' },
+        zoom: 100,
+        device: 'desktop',
+        consoleVisible: false,
+        isFullscreen: false,
+        enrichedData: null,
+        originalPrompt: '',
+        pipelineConfig: null,  // 流水线配置
+        modelSelectVisible: false,  // 模型选择器是否可见
+        adminMode: false  // 管理员模式
+    };
+    
+    // DOM Elements
+    const $ = (s) => document.querySelector(s);
+    const $$ = (s) => document.querySelectorAll(s);
+    
+    // Initialize
+    async function init() {
+        bindEvents();
+        await loadPipelineConfig();
+        applyLanguage();  // 应用语言设置
+        log(t('systemReady'), 'info');
+        
+        // 加载初始展示应用
+        await loadInitialShowcase();
+    }
+    
+    // 加载初始展示应用（从商店加载指定应用展示给用户）
+    async function loadInitialShowcase() {
+        const showcaseAppId = 'fd8e7650';  // 精品商店的展示应用
+        try {
+            const res = await fetch(api(`/api/apps/${showcaseAppId}`));
+            const data = await res.json();
+            
+            if (data.success && data.app) {
+                const app = data.app;
+                state.code = app.code || { html: '', css: '', js: '' };
+                state.enrichedData = app.enrichedData || null;
+                state.generated = true;
+                updatePreview();
+                enableRefine();
+                log(t('welcome') + (app.name || 'Demo App'), 'info');
+            }
+        } catch (e) {
+            console.log('Load showcase failed:', e.message);
+        }
+    }
+    
+    // 应用商店相关
+    let storeData = null;
+    let currentCategory = 'all';
+    
+    async function openStore() {
+        $('#storeModal').classList.add('show');
+        if (!storeData) {
+            await loadStoreApps();
+        }
+    }
+    
+    async function loadStoreApps() {
+        const grid = $('#storeGrid');
+        const categoriesEl = $('#storeCategories');
+        
+        try {
+            const res = await fetch(api('/api/apps/featured'));
+            const data = await res.json();
+            
+            if (!data.success) {
+                grid.innerHTML = '<div class="store-empty">暂无精选应用</div>';
+                return;
+            }
+            
+            storeData = data;
+            
+            // 渲染分类
+            const categories = [
+                { id: 'all', name: '全部', icon: '✨' },
+                ...(data.categories || [])
+            ];
+            
+            categoriesEl.innerHTML = categories.map(cat => `
+                <div class="store-category ${cat.id === currentCategory ? 'active' : ''}" data-category="${cat.id}">
+                    ${cat.icon} ${cat.name}
+                </div>
+            `).join('');
+            
+            // 分类点击事件
+            categoriesEl.querySelectorAll('.store-category').forEach(el => {
+                el.addEventListener('click', () => {
+                    currentCategory = el.dataset.category;
+                    categoriesEl.querySelectorAll('.store-category').forEach(c => c.classList.remove('active'));
+                    el.classList.add('active');
+                    renderStoreApps();
+                });
+            });
+            
+            renderStoreApps();
+            
+        } catch (e) {
+            console.error('加载商店失败:', e);
+            grid.innerHTML = '<div class="store-empty">加载失败，请重试</div>';
+        }
+    }
+    
+    function renderStoreApps() {
+        const grid = $('#storeGrid');
+        if (!storeData || !storeData.featured) {
+            grid.innerHTML = '<div class="store-empty">暂无应用</div>';
+            return;
+        }
+        
+        // 分类图标映射
+        const categoryIcons = {
+            'education': '📚',
+            'tools': '🔧', 
+            'games': '🎮',
+            'lifestyle': '🏠',
+            'creative': '🎨'
+        };
+        
+        // 过滤分类
+        const apps = currentCategory === 'all' 
+            ? storeData.featured 
+            : storeData.featured.filter(app => app.category === currentCategory);
+        
+        if (apps.length === 0) {
+            grid.innerHTML = '<div class="store-empty">该分类暂无应用</div>';
+            return;
+        }
+        
+        grid.innerHTML = apps.map(app => `
+            <div class="store-app" data-id="${app.id}">
+                <div class="store-app-icon">${categoryIcons[app.category] || '⚡'}</div>
+                <div class="store-app-name">${app.name}</div>
+                <div class="store-app-desc">${app.description || '点击体验这个应用'}</div>
+                ${app.tags && app.tags.length ? `
+                    <div class="store-app-tags">
+                        ${app.tags.map(t => `<span class="store-app-tag">${t}</span>`).join('')}
+                    </div>
+                ` : ''}
+                <div class="store-app-actions">
+                    ${state.adminMode ? `<button class="store-action-btn delete-btn" data-id="${app.id}" style="background:#e74c3c;color:white;">删除</button>` : ''}
+                    <button class="store-action-btn save-btn" data-id="${app.id}">收藏</button>
+                    <button class="store-action-btn open-btn" data-id="${app.id}">打开</button>
+                </div>
+            </div>
+        `).join('');
+        
+        // 绑定点击事件 - 打开应用
+        grid.querySelectorAll('.store-app .open-btn').forEach(el => {
+            el.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const appId = el.dataset.id;
+                window.open(`${BASE_PATH}/app/${appId}`, '_blank');
+            });
+        });
+        
+        // 绑定点击事件 - 收藏到我的应用
+        grid.querySelectorAll('.store-app .save-btn').forEach(el => {
+            el.addEventListener('click', (e) => {
+                e.stopPropagation();
+                saveStoreAppToLocal(el.dataset.id);
+            });
+        });
+        
+        // 绑定点击事件 - 管理员删除（仅管理员模式）
+        grid.querySelectorAll('.store-app .delete-btn').forEach(el => {
+            el.addEventListener('click', (e) => {
+                e.stopPropagation();
+                deleteStoreApp(el.dataset.id);
+            });
+        });
+        
+        // 卡片整体点击
+        grid.querySelectorAll('.store-app').forEach(el => {
+            el.addEventListener('click', () => {
+                const appId = el.dataset.id;
+                window.open(`${BASE_PATH}/app/${appId}`, '_blank');
+            });
+        });
+    }
+    
+    // 收藏商店应用到本地
+    async function saveStoreAppToLocal(appId) {
+        try {
+            // 从服务器获取完整应用数据
+            const res = await fetch(api(`/api/apps/${appId}`));
+            const data = await res.json();
+            if (!data.success) throw new Error('应用不存在');
+            
+            const appData = data.app;
+            
+            // 保存到本地存储
+            const localApp = {
+                id: 'store_' + appId,
+                name: appData.name,
+                description: appData.description || '',
+                code: appData.code,
+                enrichedData: appData.enrichedData,
+                createdAt: new Date().toISOString(),
+                sourceId: appId  // 记录来源
+            };
+            
+            const apps = getLocalApps();
+            
+            // 检查是否已收藏
+            if (apps.some(a => a.sourceId === appId || a.id === localApp.id)) {
+                alert('该应用已在我的应用中');
+                return;
+            }
+            
+            apps.unshift(localApp);
+            setLocalApps(apps);
+            
+            log(`❤️ 已收藏: ${appData.name}`, 'info');
+            alert(`已收藏「${appData.name}」到我的应用！`);
+            
+        } catch (e) {
+            alert('收藏失败: ' + e.message);
+        }
+    }
+    
+    // 加载流水线配置
+    async function loadPipelineConfig() {
+        try {
+            const res = await fetch(api('/api/config/pipeline'));
+            const data = await res.json();
+            if (data.success) {
+                state.pipelineConfig = data;
+                initModelSelectors();
+            }
+        } catch (e) {
+            console.error('加载流水线配置失败:', e);
+        }
+    }
+    
+    // 初始化模型选择器
+    function initModelSelectors() {
+        const { models, stages } = state.pipelineConfig;
+        const stageKeys = ['stage1', 'stage2', 'stage3', 'stage4'];
+        
+        stageKeys.forEach((stageKey, idx) => {
+            const selectEl = $(`#model${idx + 1}`);
+            if (!selectEl) return;
+            
+            const stageInfo = stages[stageKey];
+            const availableModels = stageInfo?.availableModels || [];
+            const defaultModel = stageInfo?.defaultModel || '';
+            
+            // 清空并填充选项
+            selectEl.innerHTML = '';
+            
+            // 添加模型选项
+            availableModels.forEach(modelKey => {
+                const model = models[modelKey];
+                if (!model) return;
+                const option = document.createElement('option');
+                option.value = modelKey;
+                option.textContent = model.displayName || model.name;
+                if (modelKey === defaultModel) option.selected = true;
+                selectEl.appendChild(option);
+            });
+            
+            // 阶段1（PM需求分析）和阶段2（Dev代码实现）不能跳过，只有阶段3和4可以跳过
+            if (stageKey === 'stage3' || stageKey === 'stage4') {
+                const skipOption = document.createElement('option');
+                skipOption.value = '__skip__';
+                skipOption.textContent = '⚠️ 跳过此步骤';
+                skipOption.className = 'skip-option';
+                selectEl.appendChild(skipOption);
+                
+                // 默认选中跳过（stage3 和 stage4 默认关闭）
+                selectEl.value = '__skip__';
+                selectEl.classList.add('skipped');
+            }
+            
+            // 监听选择变化，更新样式
+            selectEl.addEventListener('change', () => {
+                selectEl.classList.toggle('skipped', selectEl.value === '__skip__');
+            });
+        });
+        
+        // 初始化继续优化的模型选择器
+        initRefineModelSelector();
+    }
+    
+    // 初始化继续优化模型选择器
+    function initRefineModelSelector() {
+        const { models, stages } = state.pipelineConfig;
+        const refineSelect = $('#refineModel');
+        if (!refineSelect) return;
+        
+        // 使用 stage5 的配置，如果没有则用 stage2 的配置
+        const stageInfo = stages['stage5'] || stages['stage2'];
+        const availableModels = stageInfo?.availableModels || Object.keys(models);
+        const defaultModel = stageInfo?.defaultModel || availableModels[0];
+        
+        refineSelect.innerHTML = '';
+        
+        availableModels.forEach(modelKey => {
+            const model = models[modelKey];
+            if (!model) return;
+            const option = document.createElement('option');
+            option.value = modelKey;
+            option.textContent = model.displayName || model.name;
+            if (modelKey === defaultModel) option.selected = true;
+            refineSelect.appendChild(option);
+        });
+    }
+    
+    // 切换配置面板显示
+    function toggleModelSelectors() {
+        console.log('[LightApp] toggleModelSelectors called');
+        state.modelSelectVisible = !state.modelSelectVisible;
+        
+        const panel = $('#configPanel');
+        if (panel) {
+            panel.classList.toggle('show', state.modelSelectVisible);
+        }
+        
+        const btn = $('#toggleModelSelect');
+        if (btn) {
+            btn.classList.toggle('active', state.modelSelectVisible);
+            btn.innerHTML = state.modelSelectVisible 
+                ? '<i class="fas fa-check"></i> 已配置' 
+                : '<i class="fas fa-sliders-h"></i> 配置模型';
+        }
+    }
+    
+    function bindEvents() {
+        console.log('[LightApp] bindEvents called');
+        
+        // Language switch
+        $('#langBtn').addEventListener('click', switchLanguage);
+        
+        // Model selector toggle - 绑定在最前面确保不被遗漏
+        const toggleBtn = $('#toggleModelSelect');
+        console.log('[LightApp] toggleModelSelect button:', toggleBtn);
+        if (toggleBtn) {
+            toggleBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                toggleModelSelectors();
+            });
+        }
+        
+        // Tags
+        $$('.tag').forEach(tag => {
+            tag.addEventListener('click', () => {
+                $('#prompt').value = tag.dataset.p;
+                log('已选择模板', 'info');
+            });
+        });
+        
+        // Tabs
+        $$('.tab').forEach(tab => {
+            tab.addEventListener('click', () => showTab(tab.dataset.t));
+        });
+        
+        // Device buttons
+        $$('.device-btn').forEach(btn => {
+            btn.addEventListener('click', () => setDevice(btn.dataset.device));
+        });
+        
+        // Buttons
+        $('#genBtn').addEventListener('click', generate);
+        $('#refreshBtn').addEventListener('click', () => { updatePreview(); log('已刷新预览', 'info'); });
+        $('#downloadBtn').addEventListener('click', download);
+        $('#copyBtn').addEventListener('click', copyCode);
+        $('#fullscreenBtn').addEventListener('click', toggleFullscreen);
+        $('#fullscreenExitBtn').addEventListener('click', toggleFullscreen);
+        
+        // 移动端查看预览按钮
+        $('#mobilePreviewBtn').addEventListener('click', () => {
+            const rightSection = $('.right');
+            if (rightSection) {
+                rightSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        });
+        
+        // 移动端返回顶部按钮
+        $('#mobileBackBtn').addEventListener('click', () => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+        
+        // Zoom
+        $('#zoomIn').addEventListener('click', () => setZoom(state.zoom + 25));
+        $('#zoomOut').addEventListener('click', () => setZoom(state.zoom - 25));
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+                e.preventDefault();
+                generate();
+            }
+        });
+        
+        // Refine - 初始化时禁用
+        const refineBtn = $('#refineBtn');
+        refineBtn.disabled = true;
+        refineBtn.title = '请先完成闪电生成';
+        refineBtn.addEventListener('click', refineApp);
+        
+        // 输入框回车发送
+        $('#refineInput').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                refineApp();
+            }
+        });
+        
+        // Share & Apps - 点击分享按钮5次进入管理员模式
+        let shareClickCount = 0;
+        let shareClickTimer = null;
+        $('#shareBtn').addEventListener('click', (e) => {
+            shareClickCount++;
+            clearTimeout(shareClickTimer);
+            console.log(`[Admin] 分享按钮点击次数: ${shareClickCount}/5`);
+            if (shareClickCount >= 5) {
+                state.adminMode = !state.adminMode;
+                shareClickCount = 0;
+                if (state.adminMode) {
+                    log('🔐 管理员模式已激活', 'info');
+                    alert('🔐 管理员模式已激活\n商店中的应用将显示删除按钮');
+                } else {
+                    log('管理员模式已关闭', 'info');
+                    alert('管理员模式已关闭');
+                }
+                // 刷新商店显示
+                if (storeData) renderStoreApps();
+                return; // 激活管理员模式时不打开弹窗
+            }
+            shareClickTimer = setTimeout(() => { shareClickCount = 0; }, 3000); // 延长到3秒
+            openShareModal();
+        });
+        $('#shareModalClose').addEventListener('click', () => $('#shareModal').classList.remove('show'));
+        $('#saveAppBtn').addEventListener('click', saveApp);
+        $('#copyShareUrl').addEventListener('click', copyShareUrl);
+        $('#myAppsBtn').addEventListener('click', openAppsModal);
+        $('#appsModalClose').addEventListener('click', () => $('#appsModal').classList.remove('show'));
+        
+        // 隐藏管理员面板 - 快速点击分享标题5次显示
+        let adminClickCount = 0;
+        let adminClickTimer = null;
+        $('#shareModal .modal-header h3').addEventListener('click', () => {
+            adminClickCount++;
+            clearTimeout(adminClickTimer);
+            if (adminClickCount >= 5) {
+                $('#adminPanel').style.display = 'block';
+                adminClickCount = 0;
+                log('管理员模式已激活', 'info');
+            }
+            adminClickTimer = setTimeout(() => { adminClickCount = 0; }, 2000);
+        });
+        
+        // 管理员操作
+        $('#addToStoreBtn').addEventListener('click', addToStore);
+        $('#removeFromStoreBtn').addEventListener('click', removeFromStore);
+        $('#deleteAppBtn').addEventListener('click', deleteAppCompletely);
+        
+        // 应用商店
+        $('#storeBtn').addEventListener('click', openStore);
+        $('#storeModalClose').addEventListener('click', () => $('#storeModal').classList.remove('show'));
+        
+        // Close modals on overlay click
+        $$('.modal-overlay').forEach(m => {
+            m.addEventListener('click', (e) => { if (e.target === m) m.classList.remove('show'); });
+        });
+        
+        // ESC to close modals
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') $$('.modal-overlay').forEach(m => m.classList.remove('show'));
+        });
+    }
+    
+    // Logging
+    function log(msg, type = 'info') {
+        console.log(`[${type}] ${msg}`);
+        const logEl = $('#log');
+        const time = new Date().toLocaleTimeString();
+        const line = document.createElement('div');
+        line.className = 'log-line';
+        line.innerHTML = `<span class="log-time">${time}</span><span class="log-msg ${type}">${msg}</span>`;
+        logEl.insertBefore(line, logEl.firstChild);
+        if (state.consoleVisible) logEl.classList.add('show');
+    }
+    
+    // Toggle console
+    function toggleConsole() {
+        state.consoleVisible = !state.consoleVisible;
+        $('#log').classList.toggle('show', state.consoleVisible);
+    }
+    
+    // Toggle fullscreen
+    function toggleFullscreen() {
+        state.isFullscreen = !state.isFullscreen;
+        $('#app').classList.toggle('fullscreen', state.isFullscreen);
+        $('#fullscreenBtn').innerHTML = state.isFullscreen 
+            ? '<i class="fas fa-compress"></i> 退出全屏' 
+            : '<i class="fas fa-expand"></i> 全屏';
+    }
+    
+    // Stage management
+    function setStage(n, status, time, summary) {
+        const el = $(`#s${n}`);
+        if (!el) return;
+        el.className = 'stage ' + (status || '');
+        $(`#t${n}`).textContent = time || '';
+        const sumEl = $(`#sum${n}`);
+        if (sumEl) {
+            sumEl.innerHTML = summary || '';
+        }
+    }
+    
+    function resetStages() {
+        for (let i = 1; i <= 5; i++) setStage(i, '', '', '');
+    }
+    
+    // Tab management
+    function showTab(name) {
+        $$('.tab').forEach(t => t.classList.toggle('on', t.dataset.t === name));
+        $$('.panel').forEach(p => p.classList.toggle('show', p.id === 'p-' + name));
+    }
+    
+    // Device management
+    function setDevice(device) {
+        state.device = device;
+        $$('.device-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.device === device));
+        const wrapper = $('#previewWrapper');
+        wrapper.className = `preview-wrapper device-${device}`;
+        
+        // Reset zoom for mobile/tablet
+        if (device !== 'desktop') {
+            setZoom(100);
+        }
+    }
+    
+    // Zoom management
+    function setZoom(value) {
+        state.zoom = Math.max(25, Math.min(200, value));
+        $('#zoomValue').textContent = state.zoom + '%';
+        const scale = state.zoom / 100;
+        $('#preview').style.transform = `scale(${scale})`;
+        $('#preview').style.width = (100 / scale) + '%';
+        $('#preview').style.height = (100 / scale) + '%';
+    }
+    
+    // Preview update - Enhanced sandbox
+    function updatePreview() {
+        const { html, css, js } = state.code;
+        if (!html && !css && !js) return;
+        
+        $('#empty').style.display = 'none';
+        
+        // 检查是否有封面图和游戏失败图路径
+        const coverImagePath = state.enrichedData?.coverImagePath;
+        const gameOverImagePath = state.enrichedData?.gameOverImagePath;
+        // 如果有图片路径，可通过 CSS 变量传递（兼容旧代码），但现在 Dev 代码中会直接使用路径
+        const cssVars = [
+            coverImagePath ? `--cover-image: url('${coverImagePath}');` : '',
+            gameOverImagePath ? `--gameover-image: url('${gameOverImagePath}');` : ''
+        ].filter(Boolean).join('\n            ');
+        
+        // Build complete HTML document with enhanced base styles
+        const doc = `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <style>
+        /* Reset & Base */
+        :root {
+            ${cssVars}
+        }
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { 
+            width: 100%; 
+            height: 100%; 
+            overflow: auto;
+            -webkit-overflow-scrolling: touch;
+            scroll-behavior: smooth;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+            position: relative;
+        }
+        /* Better touch targets */
+        button, a, input, select, textarea { 
+            font: inherit;
+        }
+        button { cursor: pointer; }
+        img, svg { display: block; max-width: 100%; }
+        /* Custom styles */
+        ${css || ''}
+    </style>
+</head>
+<body>
+    ${html || ''}
+    <script>
+        // Console proxy for debugging
+        (function() {
+            const originalConsole = { log: console.log, error: console.error, warn: console.warn };
+            ['log', 'error', 'warn'].forEach(method => {
+                console[method] = function(...args) {
+                    originalConsole[method].apply(console, args);
+                };
+            });
+        })();
+        // Error handling
+        window.onerror = function(msg, url, line, col, error) {
+            console.error('Error:', msg, 'at line', line);
+            return true;
+        };
+        window.onunhandledrejection = function(e) {
+            console.error('Unhandled Promise:', e.reason);
+        };
+        // User code
+        try {
+            ${js || ''}
+        } catch(e) {
+            console.error('JS Error:', e.message);
+        }
+    <\/script>
+</body>
+</html>`;
+        
+        // Use srcdoc for better isolation
+        const iframe = $('#preview');
+        iframe.srcdoc = doc;
+        
+        // Update code displays
+        $('#c-html').value = html || '';
+        $('#c-css').value = css || '';
+        $('#c-js').value = js || '';
+    }
+    
+    // Download
+    function download() {
+        const { html, css, js } = state.code;
+        if (!html && !css && !js) {
+            alert('没有可下载的代码');
+            return;
+        }
+        
+        const doc = `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LightApp Export</title>
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+${css}
+    </style>
+</head>
+<body>
+${html}
+    <script>
+${js}
+    <\/script>
+</body>
+</html>`;
+        
+        const blob = new Blob([doc], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'lightapp-export.html';
+        a.click();
+        URL.revokeObjectURL(url);
+        log('已下载 HTML 文件', 'info');
+    }
+    
+    // Copy code
+    function copyCode() {
+        const { html, css, js } = state.code;
+        const text = `<!-- HTML -->\n${html}\n\n/* CSS */\n${css}\n\n// JavaScript\n${js}`;
+        navigator.clipboard.writeText(text).then(() => {
+            log('代码已复制到剪贴板', 'info');
+        }).catch(() => {
+            log('复制失败', 'error');
+        });
+    }
+    
+    // API call - 支持指定模型
+    async function callAPI(stage, prompt, existing, enriched, modelKey = null) {
+        const res = await fetch(api('/api/generate/stage'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                stageId: stage,
+                prompt: prompt,
+                existingCode: existing,
+                enrichedData: enriched,
+                modelKey: modelKey
+            })
+        });
+        const data = await res.json();
+        if (!data.success) throw new Error(data.error || '生成失败');
+        return data;
+    }
+    
+    // Stage 1.5 图片生成 API
+    async function callStage1_5API(enrichedData) {
+        const res = await fetch(api('/api/generate/stage1_5'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ enrichedData })
+        });
+        const data = await res.json();
+        if (!data.success) throw new Error(data.error || '图片生成失败');
+        return data;
+    }
+    
+    // 获取选中的模型
+    function getSelectedModel(stageNum) {
+        const selectEl = $(`#model${stageNum}`);
+        return selectEl?.value || null;
+    }
+    
+    // 更新生成状态提示
+    function updateGenStatus(stage, desc) {
+        const statusEl = $('#genStatus');
+        if (!statusEl) return;
+        
+        if (!stage) {
+            statusEl.classList.remove('show');
+            return;
+        }
+        
+        statusEl.innerHTML = `
+            <i class="fas fa-spinner spin"></i>
+            <div>
+                <span class="status-stage">${stage}</span>
+                <span class="status-desc">${desc || ''}</span>
+            </div>
+        `;
+        statusEl.classList.add('show');
+    }
+    
+    // Generate
+    async function generate() {
+        const prompt = $('#prompt').value.trim();
+        if (!prompt) {
+            alert('请输入应用描述');
+            return;
+        }
+        if (state.busy) return;
+        
+        state.busy = true;
+        state.originalPrompt = prompt;
+        const btn = $('#genBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner spin"></i> 生成中...';
+        
+        $('#log').innerHTML = '';
+        state.consoleVisible = true;
+        $('#log').classList.add('show');
+        
+        resetStages();
+        log('开始生成应用...', 'info');
+        
+        const stages = ['stage1', 'stage1_5', 'stage2', 'stage3', 'stage4'];
+        const stageNames = ['PM', 'Artist', 'Dev', 'Tester', 'Designer'];
+        const stageDescs = ['正在理解你的需求...', '正在生成封面图...', '正在编写代码逻辑...', '正在测试和修复问题...', '正在优化视觉效果...'];
+        // 阶段到模型选择器的映射（stage1_5 不需要模型选择器）
+        const stageToModelNum = { 'stage1': 1, 'stage1_5': null, 'stage2': 2, 'stage3': 3, 'stage4': 4 };
+        let enrichedData = null;
+        let currentCode = null;
+        let success = true;
+        
+        for (let i = 0; i < stages.length; i++) {
+            const sid = stages[i];
+            const num = i + 1;  // 阶段显示编号 (1-5)
+            const modelNum = stageToModelNum[sid];  // 模型选择器编号 (1-4 或 null)
+            const start = Date.now();
+            
+            // 获取用户选择的模型（stage1_5 不需要用户选择）
+            const selectedModel = modelNum ? getSelectedModel(modelNum) : null;
+            
+            // 检查是否跳过此阶段
+            if (selectedModel === '__skip__') {
+                setStage(num, 'skipped', '跳过', '<i class="fas fa-forward"></i> 已跳过');
+                log(`[阶段${num}] 已跳过`, 'warn');
+                continue;
+            }
+            
+            setStage(num, 'active', '');
+            updateGenStatus(stageNames[i], stageDescs[i]);
+            log(`[阶段${num}] ${stageNames[i]} 处理中...` + (selectedModel ? ` (${selectedModel})` : ''), 'info');
+            
+            try {
+                let res;
+                if (sid === 'stage1_5') {
+                    // Stage 1.5: 调用图片生成 API
+                    res = await callStage1_5API(enrichedData);
+                    enrichedData = res.enrichedData;
+                    state.enrichedData = enrichedData;
+                    const hasCover = !!enrichedData?.coverImagePath;
+                    const hasGameOver = !!enrichedData?.gameOverImagePath;
+                    const summary = hasCover ? 
+                        `<i class="fas fa-image"></i> 封面图${hasGameOver ? ' + 失败图' : ''}` : 
+                        '<i class="fas fa-image"></i> 跳过';
+                    const elapsed = ((Date.now() - start) / 1000).toFixed(1);
+                    setStage(num, 'done', elapsed + 's', summary);
+                    log(`[阶段${num}] Artist 完成 - ${hasCover ? '已生成图片' : '无图片'} (${elapsed}s)`, 'info');
+                } else {
+                    res = await callAPI(sid, prompt, currentCode, enrichedData, selectedModel);
+                    const elapsed = ((Date.now() - start) / 1000).toFixed(1);
+                    
+                    // 生成阶段摘要
+                    let summary = '';
+                    if (sid === 'stage1') {
+                        enrichedData = res.enrichedData;
+                        state.enrichedData = enrichedData;
+                        const appName = enrichedData?.appName || '应用';
+                        const appType = enrichedData?.appType || '';
+                        summary = `<i class="fas fa-cube"></i> ${appName}` + (appType ? ` · ${appType}` : '');
+                        log(`[阶段${num}] PM 完成 - ${appName} (${elapsed}s)`, 'info');
+                    } else {
+                        currentCode = res.code;
+                        state.code = {
+                            html: currentCode?.html || '',
+                            css: currentCode?.css || '',
+                            js: currentCode?.js || ''
+                        };
+                        updatePreview();
+                        
+                        // 计算代码统计
+                        const htmlLen = (currentCode?.html || '').length;
+                        const cssLen = (currentCode?.css || '').length;
+                        const jsLen = (currentCode?.js || '').length;
+                        const totalLines = ((currentCode?.html || '').split('\n').length + 
+                                           (currentCode?.css || '').split('\n').length + 
+                                           (currentCode?.js || '').split('\n').length);
+                        
+                        if (sid === 'stage2') {
+                            summary = `<i class="fas fa-file-code"></i> ${totalLines} 行代码`;
+                        } else if (sid === 'stage3') {
+                            summary = `<i class="fas fa-bug-slash"></i> 测试修复完成`;
+                        } else if (sid === 'stage4') {
+                            summary = `<i class="fas fa-palette"></i> 视觉优化完成`;
+                        }
+                        log(`[阶段${num}] ${stageNames[i]} 完成 (${elapsed}s)`, 'info');
+                    }
+                    
+                    setStage(num, 'done', elapsed + 's', summary);
+                }
+            } catch (e) {
+                setStage(num, 'error', '', `<i class="fas fa-exclamation-triangle"></i> ${e.message.substring(0, 20)}`);
+                log(`[阶段${num}] 错误: ${e.message}`, 'error');
+                success = false;
+                break;
+            }
+        }
+        
+        updateGenStatus(null); // 隐藏状态提示
+        log('生成完成!', 'info');
+        state.busy = false;
+        state.generated = true;  // 标记已完成生成
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-bolt"></i> 闪电生成';
+        
+        // 启用继续优化按钮和模型选择器
+        enableRefine();
+        
+        // Auto hide console after 3 seconds
+        setTimeout(() => {
+            if (!state.consoleVisible) return;
+            state.consoleVisible = false;
+            $('#log').classList.remove('show');
+        }, 3000);
+    }
+    
+    // ========== 继续优化 ==========
+    
+    async function refineApp() {
+        const input = $('#refineInput');
+        const status = $('#refineStatus');
+        const btn = $('#refineBtn');
+        const message = input.value.trim();
+        
+        // 检查是否已完成生成
+        if (!state.generated) {
+            status.textContent = '请先完成闪电生成';
+            status.className = 'refine-status error';
+            setTimeout(() => {
+                status.textContent = '';
+                status.className = 'refine-status';
+            }, 2000);
+            return;
+        }
+        
+        if (!message) {
+            status.textContent = '请输入修改需求';
+            status.className = 'refine-status error';
+            return;
+        }
+        
+        if (!state.code.html && !state.code.css && !state.code.js) {
+            status.textContent = '请先生成一个应用';
+            status.className = 'refine-status error';
+            return;
+        }
+        
+        if (state.busy) {
+            status.textContent = '正在处理中，请稍候...';
+            status.className = 'refine-status error';
+            return;
+        }
+        state.busy = true;
+        
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner spin"></i>';
+        status.textContent = '正在优化...';
+        status.className = 'refine-status';
+        
+        // 获取选中的模型
+        const modelSelect = $('#refineModel');
+        const selectedModel = modelSelect?.value || null;
+        
+        try {
+            const res = await fetch(api('/api/generate/refine'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    instruction: message,
+                    existingCode: state.code,
+                    enrichedData: state.enrichedData,
+                    originalPrompt: state.originalPrompt,
+                    modelKey: selectedModel
+                })
+            });
+            
+            const data = await res.json();
+            if (!data.success) throw new Error(data.error);
+            
+            state.code = {
+                html: data.code?.html || state.code.html,
+                css: data.code?.css || state.code.css,
+                js: data.code?.js || state.code.js
+            };
+            updatePreview();
+            
+            input.value = '';
+            status.textContent = '✨ 优化完成！';
+            status.className = 'refine-status success';
+            log('优化完成', 'info');
+            
+        } catch (e) {
+            status.textContent = '❌ ' + e.message;
+            status.className = 'refine-status error';
+            log('优化失败: ' + e.message, 'error');
+        } finally {
+            state.busy = false;
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-paper-plane"></i> 继续';
+        }
+    }
+    
+    // ========== 分享功能 ==========
+    
+    function openShareModal() {
+        if (!state.code.html && !state.code.css && !state.code.js) {
+            alert('请先生成一个应用');
+            return;
+        }
+        $('#shareResult').classList.remove('show');
+        $('#adminPanel').style.display = 'none';  // 每次打开时隐藏管理员面板
+        $('#shareModal').classList.add('show');
+    }
+    
+    // localStorage 存储键名
+    const APPS_STORAGE_KEY = 'lightapp_my_apps';
+    
+    // 获取本地存储的应用列表
+    function getLocalApps() {
+        try {
+            const data = localStorage.getItem(APPS_STORAGE_KEY);
+            return data ? JSON.parse(data) : [];
+        } catch (e) {
+            console.error('读取本地应用失败:', e);
+            return [];
+        }
+    }
+    
+    // 保存应用列表到本地存储
+    function setLocalApps(apps) {
+        try {
+            localStorage.setItem(APPS_STORAGE_KEY, JSON.stringify(apps));
+            return true;
+        } catch (e) {
+            console.error('保存本地应用失败:', e);
+            return false;
+        }
+    }
+    
+    async function saveApp() {
+        const btn = $('#saveAppBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner spin"></i> 保存中...';
+        
+        try {
+            if (!state.code) {
+                throw new Error('没有可保存的应用代码');
+            }
+            
+            const appName = state.enrichedData?.appName || '未命名应用';
+            const appId = 'local_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+            
+            const newApp = {
+                id: appId,
+                name: appName,
+                description: state.enrichedData?.description || '',
+                code: state.code,
+                enrichedData: state.enrichedData,
+                createdAt: new Date().toISOString()
+            };
+            
+            const apps = getLocalApps();
+            apps.unshift(newApp); // 新应用放在最前面
+            
+            if (!setLocalApps(apps)) {
+                throw new Error('存储空间不足');
+            }
+            
+            // 生成分享链接（仍然保存到服务器以便分享）
+            try {
+                const res = await fetch(api('/api/apps/save'), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        code: state.code,
+                        enrichedData: state.enrichedData,
+                        name: appName,
+                        description: state.enrichedData?.description
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    $('#shareUrl').value = window.location.origin + BASE_PATH + data.url;
+                    $('#shareResult').classList.add('show');
+                }
+            } catch (e) {
+                // 分享链接生成失败不影响本地保存
+                console.log('分享链接生成失败，但应用已保存到本地');
+            }
+            
+            log(`应用已保存到本地: ${appName}`, 'info');
+            await loadAppList();
+        } catch (e) {
+            alert('保存失败: ' + e.message);
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-save"></i> 保存到本地';
+        }
+    }
+    
+    function copyShareUrl() {
+        const input = $('#shareUrl');
+        input.select();
+        navigator.clipboard.writeText(input.value).then(() => {
+            log('链接已复制', 'info');
+            $('#copyShareUrl').innerHTML = '<i class="fas fa-check"></i>';
+            setTimeout(() => { $('#copyShareUrl').innerHTML = '<i class="fas fa-copy"></i>'; }, 2000);
+        });
+    }
+    
+    // 从分享链接提取应用ID
+    function getAppIdFromShareUrl() {
+        const shareUrl = $('#shareUrl').value;
+        if (!shareUrl) return null;
+        const match = shareUrl.match(/\/app\/([a-z0-9]+)/i);
+        return match ? match[1] : null;
+    }
+    
+    // 管理员功能：添加到应用商店
+    async function addToStore() {
+        const btn = $('#addToStoreBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner spin"></i> 添加中...';
+        
+        try {
+            const appId = getAppIdFromShareUrl();
+            if (!appId) {
+                throw new Error('请先保存应用获取链接');
+            }
+            
+            const category = $('#adminCategory').value;
+            const order = parseInt($('#adminOrder').value) || 10;
+            
+            // 调用添加到精选的 API
+            const res = await fetch(api('/api/apps/featured'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    id: appId,
+                    category: category,
+                    tags: [],
+                    order: order
+                })
+            });
+            
+            const data = await res.json();
+            if (!data.success) throw new Error(data.error || '添加失败');
+            
+            log(`✅ 已添加到应用商店: ${state.enrichedData?.appName || appId}`, 'info');
+            alert('添加成功！应用已上架到商店');
+            
+        } catch (e) {
+            alert('添加失败: ' + e.message);
+            log(`添加商店失败: ${e.message}`, 'error');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-plus-circle"></i> 添加到应用商店';
+        }
+    }
+    
+    // 管理员功能：从商店下架
+    async function removeFromStore() {
+        const appId = getAppIdFromShareUrl();
+        if (!appId) {
+            alert('请先保存应用获取链接');
+            return;
+        }
+        
+        if (!confirm(`确定要从商店下架此应用吗？\n(应用本身不会被删除，只是从商店移除)`)) return;
+        
+        const btn = $('#removeFromStoreBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner spin"></i>';
+        
+        try {
+            const res = await fetch(api(`/api/apps/featured/${appId}`), { method: 'DELETE' });
+            const data = await res.json();
+            if (!data.success) throw new Error(data.error || '下架失败');
+            
+            log(`✅ 已从商店下架: ${appId}`, 'info');
+            alert('已从商店下架');
+        } catch (e) {
+            alert('下架失败: ' + e.message);
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-store-slash"></i> 从商店下架';
+        }
+    }
+    
+    // 管理员功能：从商店删除应用（用于商店列表）
+    async function deleteStoreApp(appId) {
+        if (!state.adminMode) return;
+        
+        const app = storeData?.featured?.find(a => a.id === appId);
+        const appName = app?.name || appId;
+        
+        if (!confirm(`⚠️ 确定要从商店删除这个应用吗？\n\n应用名: ${appName}\nID: ${appId}\n\n(只会从商店移除，不影响原应用)`)) return;
+        
+        try {
+            const res = await fetch(api(`/api/apps/featured/${appId}`), { method: 'DELETE' });
+            const data = await res.json();
+            if (!data.success) throw new Error(data.error || '删除失败');
+            
+            log(`✅ 已从商店删除: ${appName}`, 'info');
+            
+            // 从本地数据中移除并刷新显示
+            if (storeData && storeData.featured) {
+                storeData.featured = storeData.featured.filter(a => a.id !== appId);
+                renderStoreApps();
+            }
+            
+        } catch (e) {
+            alert('删除失败: ' + e.message);
+            log(`删除商店应用失败: ${e.message}`, 'error');
+        }
+    }
+    
+    // 管理员功能：彻底删除应用
+    async function deleteAppCompletely() {
+        const appId = getAppIdFromShareUrl();
+        if (!appId) {
+            alert('请先保存应用获取链接');
+            return;
+        }
+        
+        if (!confirm(`⚠️ 危险操作！\n\n确定要彻底删除此应用吗？\n应用ID: ${appId}\n\n此操作将同时删除：\n- 分享数据库中的应用\n- 商店中的应用（如有）\n\n此操作不可恢复！`)) return;
+        
+        const btn = $('#deleteAppBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner spin"></i>';
+        
+        try {
+            // 先从商店删除（如果有）
+            await fetch(api(`/api/apps/featured/${appId}`), { method: 'DELETE' }).catch(() => {});
+            
+            // 再从分享数据库删除
+            const res = await fetch(api(`/api/apps/${appId}`), { method: 'DELETE' });
+            const data = await res.json();
+            if (!data.success) throw new Error(data.error || '删除失败');
+            
+            log(`🗑️ 已彻底删除: ${appId}`, 'info');
+            alert('应用已彻底删除');
+            $('#shareUrl').value = '';
+            $('#shareResult').classList.remove('show');
+        } catch (e) {
+            alert('删除失败: ' + e.message);
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-trash"></i> 彻底删除';
+        }
+    }
+    
+    async function openAppsModal() {
+        $('#appsModal').classList.add('show');
+        await loadAppList();
+    }
+    
+    async function loadAppList() {
+        const listEl = $('#appList');
+        
+        const apps = getLocalApps();
+        
+        if (apps.length === 0) {
+            listEl.innerHTML = '<div class="empty-apps"><i class="fas fa-folder-open"></i><p>还没有保存的应用</p><p style="font-size:12px; margin-top:8px; opacity:0.7">应用保存在浏览器本地，不会丢失</p></div>';
+            return;
+        }
+        
+        listEl.innerHTML = apps.map(app => `
+            <div class="app-item" data-id="${app.id}">
+                <div class="app-icon"><i class="fas fa-cube"></i></div>
+                <div class="app-info">
+                    <div class="app-name">${escapeHtml(app.name)}</div>
+                    <div class="app-date">${formatDate(app.createdAt)}</div>
+                </div>
+                <div class="app-actions">
+                    <button class="app-action-btn" title="加载到编辑器" onclick="event.stopPropagation(); loadApp('${app.id}')"><i class="fas fa-edit"></i></button>
+                    <button class="app-action-btn delete" title="删除" onclick="event.stopPropagation(); deleteApp('${app.id}')"><i class="fas fa-trash"></i></button>
+                </div>
+            </div>
+        `).join('');
+    }
+    
+    // 启用继续优化功能
+    function enableRefine() {
+        const refineBtn = $('#refineBtn');
+        const refineModel = $('#refineModel');
+        if (refineBtn) {
+            refineBtn.disabled = false;
+            refineBtn.title = '发送';
+        }
+        if (refineModel) {
+            refineModel.disabled = false;
+        }
+        
+        // 移动端：显示预览按钮和返回按钮，并自动滚动到预览区
+        if (window.innerWidth <= 900) {
+            const mobilePreviewBtn = $('#mobilePreviewBtn');
+            const mobileBackBtn = $('#mobileBackBtn');
+            if (mobilePreviewBtn) {
+                mobilePreviewBtn.style.display = 'block';
+            }
+            if (mobileBackBtn) {
+                mobileBackBtn.style.display = 'block';
+            }
+            // 自动滚动到预览区域
+            setTimeout(() => {
+                const rightSection = $('.right');
+                if (rightSection) {
+                    rightSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }, 500);
+        }
+    }
+    
+    window.loadApp = async function(id) {
+        try {
+            const apps = getLocalApps();
+            const app = apps.find(a => a.id === id);
+            
+            if (!app) {
+                throw new Error('应用不存在');
+            }
+            
+            state.code = app.code;
+            state.enrichedData = app.enrichedData;
+            updatePreview();
+            $('#appsModal').classList.remove('show');
+            
+            // 启用继续优化按钮
+            enableRefine();
+            
+            log(`已加载: ${app.name}`, 'info');
+        } catch (e) {
+            alert('加载失败: ' + e.message);
+        }
+    };
+    
+    window.deleteApp = async function(id) {
+        if (!confirm('确定删除这个应用吗？')) return;
+        try {
+            const apps = getLocalApps();
+            const newApps = apps.filter(a => a.id !== id);
+            setLocalApps(newApps);
+            await loadAppList();
+            log('应用已删除', 'info');
+        } catch (e) {
+            alert('删除失败');
+        }
+    };
+    
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+    
+    function formatDate(dateStr) {
+        const d = new Date(dateStr);
+        const diff = Date.now() - d;
+        if (diff < 60000) return '刚刚';
+        if (diff < 3600000) return Math.floor(diff / 60000) + '分钟前';
+        if (diff < 86400000) return Math.floor(diff / 3600000) + '小时前';
+        return d.toLocaleDateString('zh-CN');
+    }
+    
+    // Start
+    init();
+})();
+</script>
+</body>
+</html>
